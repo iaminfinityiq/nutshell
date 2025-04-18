@@ -32,3 +32,12 @@ type Token struct {
 	TokenType     int
 	Value         string
 }
+
+func CreateToken(start_position *runtime.Position, end_position *runtime.Position, token_type int, value string) *Token {
+	return &Token{
+		StartPosition: start_position,
+		EndPosition: end_position,
+		TokenType: token_type,
+		Value: value,
+	}
+}
