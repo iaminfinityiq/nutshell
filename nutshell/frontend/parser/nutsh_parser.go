@@ -277,7 +277,7 @@ func (n *NutshParser) parse_primary_expression() runtime.RuntimeResult[*Expressi
 		if rt2.Error != nil {
 			return runtime.RuntimeResult[*Expression]{
 				Result: nil,
-				Error: rt.Error,
+				Error: rt2.Error,
 			}
 		}
 
