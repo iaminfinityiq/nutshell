@@ -1,0 +1,316 @@
+package parser
+
+import (
+	"fmt"
+	"nutshell/frontend/lexer"
+	"nutshell/runtime"
+	"strconv"
+)
+
+type NutshParser struct {
+	Tokens       *[]*lexer.Token
+	Position     int
+	CurrentToken *lexer.Token
+}
+
+func (n *NutshParser) advance() {
+	n.Position++
+	n.CurrentToken = (*n.Tokens)[n.Position]
+}
+
+func (n *NutshParser) get_token_type(token *lexer.Token) int {
+	return (*token).TokenType
+}
+
+func (n *NutshParser) get_current_token_type() int {
+	return n.get_token_type(n.CurrentToken)
+}
+
+func (n *NutshParser) get_token_value(token *lexer.Token) string {
+	return (*token).Value
+}
+
+func (n *NutshParser) get_current_token_value() string {
+	return n.get_token_value(n.CurrentToken)
+}
+
+func (n *NutshParser) expect(token_type int) runtime.RuntimeResult[*lexer.Token] {
+	if n.get_current_token_type() != token_type {
+		var err runtime.Error = runtime.SyntaxError(n.CurrentToken.StartPosition, n.CurrentToken.EndPosition, fmt.Sprintf("Expected %d, got %s", token_type, n.get_current_token_value()))
+		return runtime.RuntimeResult[*lexer.Token]{
+			Result: nil,
+			Error: &err,
+		}
+	}
+
+	return runtime.RuntimeResult[*lexer.Token]{
+		Result: n.CurrentToken,
+		Error: nil,
+	}
+}
+
+func (n *NutshParser) ParseBlock() runtime.RuntimeResult[*Block] {
+	var block Block = *InitBlock()
+	for n.Position < len(*n.Tokens) - 1 {
+		for n.get_current_token_type() == lexer.Semicolon {
+			n.advance()
+		}
+
+		if n.Position == len(*n.Tokens) - 1 {
+			break
+		}
+
+		var rt runtime.RuntimeResult[*Statement] = n.parse_statement()
+		if rt.Error != nil {
+			return runtime.RuntimeResult[*Block]{
+				Result: nil,
+				Error:  rt.Error,
+			}
+		}
+
+		*block.Body = append(*block.Body, rt.Result)
+	}
+
+	return runtime.RuntimeResult[*Block]{
+		Result: &block,
+		Error:  nil,
+	}
+}
+
+func (n *NutshParser) parse_statement() runtime.RuntimeResult[*Statement] {
+	var returned runtime.RuntimeResult[*Statement]
+	switch n.get_current_token_type() {
+	default:
+		var rt runtime.RuntimeResult[*Expression] = n.parse_expression()
+		if rt.Error != nil {
+			return runtime.RuntimeResult[*Statement]{
+				Result: nil,
+				Error:  rt.Error,
+			}
+		}
+
+		var statement Statement = (*rt.Result).(Statement)
+		returned = runtime.RuntimeResult[*Statement]{
+			Result: &statement,
+			Error:  nil,
+		}
+	}
+
+	return returned
+}
+
+func (n *NutshParser) parse_expression() runtime.RuntimeResult[*Expression] {
+	var rt runtime.RuntimeResult[*Expression] = n.parse_additive_expression()
+	if rt.Error != nil {
+		return runtime.RuntimeResult[*Expression]{
+			Result: nil,
+			Error:  rt.Error,
+		}
+	}
+
+	return runtime.RuntimeResult[*Expression]{
+		Result: rt.Result,
+		Error:  nil,
+	}
+}
+
+func (n *NutshParser) parse_additive_expression() runtime.RuntimeResult[*Expression] {
+	var rt runtime.RuntimeResult[*Expression] = n.parse_multiplicative_expression()
+	if rt.Error != nil {
+		return runtime.RuntimeResult[*Expression]{
+			Result: nil,
+			Error:  rt.Error,
+		}
+	}
+
+	var left *Expression = rt.Result
+	for n.get_current_token_type() == lexer.Plus || n.get_current_token_type() == lexer.Minus {
+		var operator int = n.get_current_token_type()
+		n.advance()
+
+		rt = n.parse_multiplicative_expression()
+		if rt.Error != nil {
+			return runtime.RuntimeResult[*Expression]{
+				Result: nil,
+				Error:  rt.Error,
+			}
+		}
+
+		var binary_expression Expression = interface{}(BinaryExpression{
+			Left:     left,
+			Operator: operator,
+			Right:    rt.Result,
+		}).(Expression)
+
+		left = &binary_expression
+	}
+
+	return runtime.RuntimeResult[*Expression]{
+		Result: left,
+		Error:  nil,
+	}
+}
+
+func (n *NutshParser) parse_multiplicative_expression() runtime.RuntimeResult[*Expression] {
+	var rt runtime.RuntimeResult[*Expression] = n.parse_unary_expression()
+	if rt.Error != nil {
+		return runtime.RuntimeResult[*Expression]{
+			Result: nil,
+			Error:  rt.Error,
+		}
+	}
+
+	var left *Expression = rt.Result
+	for n.get_current_token_type() == lexer.Multiply || n.get_current_token_type() == lexer.Divide {
+		var operator int = n.get_current_token_type()
+		n.advance()
+
+		rt = n.parse_unary_expression()
+		if rt.Error != nil {
+			return runtime.RuntimeResult[*Expression]{
+				Result: nil,
+				Error:  rt.Error,
+			}
+		}
+
+		var binary_expression Expression = interface{}(BinaryExpression{
+			Left:     left,
+			Operator: operator,
+			Right:    rt.Result,
+		}).(Expression)
+
+		left = &binary_expression
+	}
+
+	return runtime.RuntimeResult[*Expression]{
+		Result: left,
+		Error:  nil,
+	}
+}
+
+func (n *NutshParser) parse_unary_expression() runtime.RuntimeResult[*Expression] {
+	if n.get_current_token_type() != lexer.Plus && n.get_current_token_type() != lexer.Minus {
+		var rt runtime.RuntimeResult[*Expression] = n.parse_primary_expression()
+		if rt.Error != nil {
+			return runtime.RuntimeResult[*Expression]{
+				Result: nil,
+				Error:  rt.Error,
+			}
+		}
+
+		return runtime.RuntimeResult[*Expression]{
+			Result: rt.Result,
+			Error:  nil,
+		}
+	}
+
+	var sign int = lexer.Plus
+	const sum int = lexer.Plus + lexer.Minus
+	var start_token *lexer.Token = n.CurrentToken
+	for n.get_current_token_type() == lexer.Plus || n.get_current_token_type() == lexer.Minus {
+		if n.get_current_token_type() == lexer.Plus {
+			n.advance()
+			continue
+		}
+
+		sign = sum - sign
+		n.advance()
+	}
+
+	var rt runtime.RuntimeResult[*Expression] = n.parse_primary_expression()
+	if rt.Error != nil {
+		return runtime.RuntimeResult[*Expression]{
+			Result: nil,
+			Error:  rt.Error,
+		}
+	}
+
+	var unary_expression Expression = interface{}(UnaryExpression{
+		Sign:  sign,
+		StartSignToken: start_token,
+		Value: rt.Result,
+	}).(Expression)
+
+	return runtime.RuntimeResult[*Expression]{
+		Result: &unary_expression,
+		Error:  nil,
+	}
+}
+
+func (n *NutshParser) parse_primary_expression() runtime.RuntimeResult[*Expression] {
+	var returned runtime.RuntimeResult[*Expression]
+	switch n.get_current_token_type() {
+	case lexer.Int:
+		value, _ := strconv.ParseInt(n.get_current_token_value(), 10, 64)
+		var int_expression Expression = interface{}(Int{
+			Value: value,
+		}).(Expression)
+
+		returned = runtime.RuntimeResult[*Expression]{
+			Result: &int_expression,
+			Error:  nil,
+		}
+	case lexer.Double:
+		value, _ := strconv.ParseFloat(n.get_current_token_value(), 64)
+		var double_expression Expression = interface{}(Double{
+			Value: value,
+		}).(Expression)
+
+		returned = runtime.RuntimeResult[*Expression]{
+			Result: &double_expression,
+			Error:  nil,
+		}
+	case lexer.LeftParenthese:
+		var left_parenthese *lexer.Token = n.CurrentToken
+		n.advance()
+
+		var rt runtime.RuntimeResult[*Expression] = n.parse_expression()
+		if rt.Error != nil {
+			return runtime.RuntimeResult[*Expression]{
+				Result: nil,
+				Error: rt.Error,
+			}
+		}
+
+		var expression *Expression = rt.Result
+		var rt2 runtime.RuntimeResult[*lexer.Token] = n.expect(lexer.RightParenthese)
+		if rt2.Error != nil {
+			return runtime.RuntimeResult[*Expression]{
+				Result: nil,
+				Error: rt.Error,
+			}
+		}
+
+		var right_parenthese *lexer.Token = rt2.Result
+
+		var bracket_expression Expression = interface{}(BracketExpression{
+			Value: expression,
+			LeftParentheseToken: left_parenthese,
+			RightParentheseToken: right_parenthese,
+		}).(Expression)
+
+		returned = runtime.RuntimeResult[*Expression]{
+			Result: &bracket_expression,
+		}
+	default:
+		var err runtime.Error = runtime.SyntaxError(n.CurrentToken.StartPosition, n.CurrentToken.EndPosition, "Invalid syntax!")
+		return runtime.RuntimeResult[*Expression]{
+			Result: nil,
+			Error:  &err,
+		}
+	}
+
+	n.advance()
+	return returned
+}
+
+func InitNutshParser(tokens *[]*lexer.Token) *NutshParser {
+	var parser *NutshParser = &NutshParser{
+		Tokens: tokens,
+		Position: -1,
+		CurrentToken: nil,
+	}
+
+	parser.advance()
+	return parser
+}
