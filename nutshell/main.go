@@ -29,5 +29,12 @@ func main() {
 		}
 
 		spew.Dump(rt.Result)
+	case "nutsh":
+		var nutsh_parser *parser.NutshParser = parser.InitNutshParser(rt.Result)
+		var rt runtime.RuntimeResult[*parser.Block] = nutsh_parser.ParseBlock()
+		if rt.Error != nil {
+			rt.Error.DisplayError()
+			return
+		}
 	}
 }
