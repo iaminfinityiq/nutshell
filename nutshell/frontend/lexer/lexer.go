@@ -47,82 +47,42 @@ func (l *Lexer) Tokenize() runtime.RuntimeResult[*[]*Token] {
 			var position_start runtime.Position = l.Position.Copy()
 			var position_end runtime.Position = position_start.Copy()
 			position_end.Advance(l.CurrentChar)
-			tokens = append(tokens, &Token{
-				StartPosition: &position_start,
-				EndPosition:   &position_end,
-				TokenType:     Plus,
-				Value:         "+",
-			})
+			tokens = append(tokens, CreateToken(&position_start, &position_end, Plus, "+"))
 		case '-':
 			var position_start runtime.Position = l.Position.Copy()
 			var position_end runtime.Position = position_start.Copy()
 			position_end.Advance(l.CurrentChar)
-			tokens = append(tokens, &Token{
-				StartPosition: &position_start,
-				EndPosition:   &position_end,
-				TokenType:     Minus,
-				Value:         "-",
-			})
+			tokens = append(tokens, CreateToken(&position_start, &position_end, Minus, "-"))
 		case '*':
 			var position_start runtime.Position = l.Position.Copy()
 			var position_end runtime.Position = position_start.Copy()
 			position_end.Advance(l.CurrentChar)
-			tokens = append(tokens, &Token{
-				StartPosition: &position_start,
-				EndPosition:   &position_end,
-				TokenType:     Multiply,
-				Value:         "*",
-			})
+			tokens = append(tokens, CreateToken(&position_start, &position_end, Multiply, "*"))
 		case '/':
 			var position_start runtime.Position = l.Position.Copy()
 			var position_end runtime.Position = position_start.Copy()
 			position_end.Advance(l.CurrentChar)
-			tokens = append(tokens, &Token{
-				StartPosition: &position_start,
-				EndPosition:   &position_end,
-				TokenType:     Divide,
-				Value:         "/",
-			})
+			tokens = append(tokens, CreateToken(&position_start, &position_end, Divide, "/"))
 		case '^':
 			var position_start runtime.Position = l.Position.Copy()
 			var position_end runtime.Position = position_start.Copy()
 			position_end.Advance(l.CurrentChar)
-			tokens = append(tokens, &Token{
-				StartPosition: &position_start,
-				EndPosition:   &position_end,
-				TokenType:     Power,
-				Value:         "^",
-			})
+			tokens = append(tokens, CreateToken(&position_start, &position_end, Power, "^"))
 		case '%':
 			var position_start runtime.Position = l.Position.Copy()
 			var position_end runtime.Position = position_start.Copy()
 			position_end.Advance(l.CurrentChar)
-			tokens = append(tokens, &Token{
-				StartPosition: &position_start,
-				EndPosition:   &position_end,
-				TokenType:     Modulo,
-				Value:         "%",
-			})
+			tokens = append(tokens, CreateToken(&position_start, &position_end, Modulo, "%"))
 		case '(':
 			var position_start runtime.Position = l.Position.Copy()
 			var position_end runtime.Position = position_start.Copy()
 			position_end.Advance(l.CurrentChar)
-			tokens = append(tokens, &Token{
-				StartPosition: &position_start,
-				EndPosition:   &position_end,
-				TokenType:     LeftParenthese,
-				Value:         "(",
-			})
+			tokens = append(tokens, CreateToken(&position_start, &position_end, LeftParenthese, "("))
 		case ')':
 			var position_start runtime.Position = l.Position.Copy()
 			var position_end runtime.Position = position_start.Copy()
 			position_end.Advance(l.CurrentChar)
-			tokens = append(tokens, &Token{
-				StartPosition: &position_start,
-				EndPosition:   &position_end,
-				TokenType:     RightParenthese,
-				Value:         ")",
-			})
+			tokens = append(tokens, CreateToken(&position_start, &position_end, RightParenthese, ")"))
 		default:
 			if is_whitespace(*l.CurrentChar) {
 				l.Advance()
@@ -152,12 +112,7 @@ func (l *Lexer) Tokenize() runtime.RuntimeResult[*[]*Token] {
 					var position_end runtime.Position = l.Position.Copy()
 					switch dot_count {
 					case 1:
-						tokens = append(tokens, &Token{
-							StartPosition: &position_start,
-							EndPosition:   &position_end,
-							TokenType:     Double,
-							Value:         number,
-						})
+						tokens = append(tokens, CreateToken(&position_start, &position_end, Double, number))
 					default:
 						l.Advance()
 
@@ -193,17 +148,9 @@ func (l *Lexer) Tokenize() runtime.RuntimeResult[*[]*Token] {
 				var position_end runtime.Position = l.Position.Copy()
 				switch dot_count {
 				case 0:
-					tokens = append(tokens, &Token{
-						StartPosition: &position_start,
-						EndPosition:   &position_end,
-						TokenType:     Int,
-						Value:         number,
-					})
+					tokens = append(tokens, CreateToken(&position_start, &position_end, Int, number))
 				case 1:
-					tokens = append(tokens, &Token{
-						TokenType: Double,
-						Value:     number,
-					})
+					tokens = append(tokens, CreateToken(&position_start, &position_end, Double, number))
 				default:
 					l.Advance()
 					var err runtime.Error = runtime.SyntaxError(&position_start, &position_end, fmt.Sprintf("Expected 0 or 1 '.' in a number, got %d", dot_count))
@@ -232,19 +179,9 @@ func (l *Lexer) Tokenize() runtime.RuntimeResult[*[]*Token] {
 				var position_end runtime.Position = l.Position.Copy()
 				tt, ok := keywords[identifier]
 				if ok {
-					tokens = append(tokens, &Token{
-						StartPosition: &position_start,
-						EndPosition:   &position_end,
-						TokenType:     tt,
-						Value:         identifier,
-					})
+					tokens = append(tokens, CreateToken(&position_start, &position_end, tt, identifier))
 				} else {
-					tokens = append(tokens, &Token{
-						StartPosition: &position_start,
-						EndPosition:   &position_end,
-						TokenType:     Identifier,
-						Value:         identifier,
-					})
+					tokens = append(tokens, CreateToken(&position_start, &position_end, Identifier, identifier))
 				}
 
 				continue
@@ -267,15 +204,15 @@ func (l *Lexer) Tokenize() runtime.RuntimeResult[*[]*Token] {
 	}
 
 	var position_start runtime.Position = l.Position.Copy()
-	
+
 	l.Advance()
 	var position_end runtime.Position = l.Position.Copy()
 
 	tokens = append(tokens, &Token{
 		StartPosition: &position_start,
-		EndPosition: &position_end,
-		TokenType: EOF,
-		Value:     "EOF",
+		EndPosition:   &position_end,
+		TokenType:     EOF,
+		Value:         "EOF",
 	})
 
 	return runtime.RuntimeResult[*[]*Token]{
