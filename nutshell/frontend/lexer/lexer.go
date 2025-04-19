@@ -18,7 +18,7 @@ func is_legal(r rune) bool {
 }
 
 func is_whitespace(r rune) bool {
-	return r == ' ' || r == '\t' || r == '\n'
+	return r == ' ' || r == '\t'
 }
 
 type Lexer struct {
@@ -43,45 +43,50 @@ func (l *Lexer) Tokenize() runtime.RuntimeResult[*[]*Token] {
 
 	for l.CurrentChar != nil {
 		switch *l.CurrentChar {
+		case '\n':
+			var position_start runtime.Position = l.Position.Copy()
+			var position_end runtime.Position = position_start.Copy()
+			position_end.Advance(nil)
+			tokens = append(tokens, CreateToken(&position_start, &position_end, Semicolon, ";"))
 		case '+':
 			var position_start runtime.Position = l.Position.Copy()
 			var position_end runtime.Position = position_start.Copy()
-			position_end.Advance(l.CurrentChar)
+			position_end.Advance(nil)
 			tokens = append(tokens, CreateToken(&position_start, &position_end, Plus, "+"))
 		case '-':
 			var position_start runtime.Position = l.Position.Copy()
 			var position_end runtime.Position = position_start.Copy()
-			position_end.Advance(l.CurrentChar)
+			position_end.Advance(nil)
 			tokens = append(tokens, CreateToken(&position_start, &position_end, Minus, "-"))
 		case '*':
 			var position_start runtime.Position = l.Position.Copy()
 			var position_end runtime.Position = position_start.Copy()
-			position_end.Advance(l.CurrentChar)
+			position_end.Advance(nil)
 			tokens = append(tokens, CreateToken(&position_start, &position_end, Multiply, "*"))
 		case '/':
 			var position_start runtime.Position = l.Position.Copy()
 			var position_end runtime.Position = position_start.Copy()
-			position_end.Advance(l.CurrentChar)
+			position_end.Advance(nil)
 			tokens = append(tokens, CreateToken(&position_start, &position_end, Divide, "/"))
 		case '^':
 			var position_start runtime.Position = l.Position.Copy()
 			var position_end runtime.Position = position_start.Copy()
-			position_end.Advance(l.CurrentChar)
+			position_end.Advance(nil)
 			tokens = append(tokens, CreateToken(&position_start, &position_end, Power, "^"))
 		case '%':
 			var position_start runtime.Position = l.Position.Copy()
 			var position_end runtime.Position = position_start.Copy()
-			position_end.Advance(l.CurrentChar)
+			position_end.Advance(nil)
 			tokens = append(tokens, CreateToken(&position_start, &position_end, Modulo, "%"))
 		case '(':
 			var position_start runtime.Position = l.Position.Copy()
 			var position_end runtime.Position = position_start.Copy()
-			position_end.Advance(l.CurrentChar)
+			position_end.Advance(nil)
 			tokens = append(tokens, CreateToken(&position_start, &position_end, LeftParenthese, "("))
 		case ')':
 			var position_start runtime.Position = l.Position.Copy()
 			var position_end runtime.Position = position_start.Copy()
-			position_end.Advance(l.CurrentChar)
+			position_end.Advance(nil)
 			tokens = append(tokens, CreateToken(&position_start, &position_end, RightParenthese, ")"))
 		default:
 			if is_whitespace(*l.CurrentChar) {
