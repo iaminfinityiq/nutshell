@@ -1,0 +1,190 @@
+package interpreter
+
+import (
+	"fmt"
+	"nutshell/backend/objects"
+	"nutshell/frontend/lexer"
+	"nutshell/frontend/parser"
+	"nutshell/runtime"
+)
+
+func EvaluateBracketExpression(heap *objects.Heap, scope *objects.Scope, ast_node *parser.BracketExpression) runtime.RuntimeResult[*objects.Object] {
+	var expression parser.Statement = (*ast_node.Value).(parser.Statement)
+	var rt runtime.RuntimeResult[*objects.Object] = Evaluate(heap, scope, &expression)
+	if rt.Error != nil {
+		return runtime.RuntimeResult[*objects.Object]{
+			Result: nil,
+			Error:  rt.Error,
+		}
+	}
+
+	return runtime.RuntimeResult[*objects.Object]{
+		Result: rt.Result,
+		Error:  nil,
+	}
+}
+
+func EvaluateInt(heap *objects.Heap, scope *objects.Scope, ast_node *parser.Int) runtime.RuntimeResult[*objects.Object] {
+	var returned *objects.Object = objects.MakeInt(heap, ast_node.Value)
+	return runtime.RuntimeResult[*objects.Object]{
+		Result: returned,
+		Error:  nil,
+	}
+}
+
+func EvaluateDouble(heap *objects.Heap, scope *objects.Scope, ast_node *parser.Double) runtime.RuntimeResult[*objects.Object] {
+	var returned *objects.Object = objects.MakeDouble(heap, ast_node.Value)
+	return runtime.RuntimeResult[*objects.Object]{
+		Result: returned,
+		Error:  nil,
+	}
+}
+
+func EvaluateBinaryExpression(heap *objects.Heap, scope *objects.Scope, ast_node *parser.BinaryExpression) runtime.RuntimeResult[*objects.Object] {
+	var node parser.Statement = (*ast_node.Left).(parser.Statement)
+	var rt runtime.RuntimeResult[*objects.Object] = Evaluate(heap, scope, &node)
+	if rt.Error != nil {
+		return runtime.RuntimeResult[*objects.Object]{
+			Result: nil,
+			Error:  rt.Error,
+		}
+	}
+
+	var left *objects.Object = rt.Result
+
+	node = (*ast_node.Right).(parser.Statement)
+	rt = Evaluate(heap, scope, &node)
+	if rt.Error != nil {
+		return runtime.RuntimeResult[*objects.Object]{
+			Result: nil,
+			Error:  rt.Error,
+		}
+	}
+
+	var right *objects.Object = rt.Result
+
+	switch ast_node.Operator {
+	case lexer.Plus:
+		add_attribute, ok := left.Access("add")
+		if !ok {
+			var err runtime.Error = runtime.TypeError(ast_node.StartPosition(), ast_node.EndPosition(), fmt.Sprintf("Cannot perforn operation '+' on %s and %s", left.DataType, right.DataType))
+			return runtime.RuntimeResult[*objects.Object]{
+				Result: nil,
+				Error:  &err,
+			}
+		}
+
+		if add_attribute.DataType == "builtin_function" {
+			var add_function func(*runtime.Position, *runtime.Position, *[]*objects.ArgumentTuple) runtime.RuntimeResult[*objects.Object] = add_attribute.Value.(func(*runtime.Position, *runtime.Position, *[]*objects.ArgumentTuple) runtime.RuntimeResult[*objects.Object])
+
+			var arguments []*objects.ArgumentTuple = []*objects.ArgumentTuple{
+				&objects.ArgumentTuple{
+					PositionStart: (*ast_node.Left).StartPosition(),
+					PositionEnd:   (*ast_node.Left).EndPosition(),
+					Argument:      left,
+				},
+				&objects.ArgumentTuple{
+					PositionStart: (*ast_node.Right).StartPosition(),
+					PositionEnd:   (*ast_node.Right).EndPosition(),
+					Argument:      right,
+				},
+			}
+
+			rt = add_function(ast_node.StartPosition(), ast_node.EndPosition(), &arguments)
+			if rt.Error != nil {
+				return runtime.RuntimeResult[*objects.Object]{
+					Result: nil,
+					Error:  rt.Error,
+				}
+			}
+
+			return runtime.RuntimeResult[*objects.Object]{
+				Result: rt.Result,
+				Error:  nil,
+			}
+		}
+	case lexer.Minus:
+		subtract_attribute, ok := left.Access("subtract")
+		if !ok {
+			var err runtime.Error = runtime.TypeError(ast_node.StartPosition(), ast_node.EndPosition(), fmt.Sprintf("Cannot perforn operation '-' on %s and %s", left.DataType, right.DataType))
+			return runtime.RuntimeResult[*objects.Object]{
+				Result: nil,
+				Error:  &err,
+			}
+		}
+
+		if subtract_attribute.DataType == "builtin_function" {
+			var subtract_function func(*runtime.Position, *runtime.Position, *[]*objects.ArgumentTuple) runtime.RuntimeResult[*objects.Object] = subtract_attribute.Value.(func(*runtime.Position, *runtime.Position, *[]*objects.ArgumentTuple) runtime.RuntimeResult[*objects.Object])
+
+			var arguments []*objects.ArgumentTuple = []*objects.ArgumentTuple{
+				&objects.ArgumentTuple{
+					PositionStart: (*ast_node.Left).StartPosition(),
+					PositionEnd:   (*ast_node.Left).EndPosition(),
+					Argument:      left,
+				},
+				&objects.ArgumentTuple{
+					PositionStart: (*ast_node.Right).StartPosition(),
+					PositionEnd:   (*ast_node.Right).EndPosition(),
+					Argument:      right,
+				},
+			}
+
+			rt = subtract_function(ast_node.StartPosition(), ast_node.EndPosition(), &arguments)
+			if rt.Error != nil {
+				return runtime.RuntimeResult[*objects.Object]{
+					Result: nil,
+					Error:  rt.Error,
+				}
+			}
+
+			return runtime.RuntimeResult[*objects.Object]{
+				Result: rt.Result,
+				Error:  nil,
+			}
+		}
+	case lexer.Multiply:
+		multiply_attribute, ok := left.Access("multiply")
+		if !ok {
+			var err runtime.Error = runtime.TypeError(ast_node.StartPosition(), ast_node.EndPosition(), fmt.Sprintf("Cannot perforn operation '*' on %s and %s", left.DataType, right.DataType))
+			return runtime.RuntimeResult[*objects.Object]{
+				Result: nil,
+				Error:  &err,
+			}
+		}
+
+		if multiply_attribute.DataType == "builtin_function" {
+			var subtract_function func(*runtime.Position, *runtime.Position, *[]*objects.ArgumentTuple) runtime.RuntimeResult[*objects.Object] = multiply_attribute.Value.(func(*runtime.Position, *runtime.Position, *[]*objects.ArgumentTuple) runtime.RuntimeResult[*objects.Object])
+
+			var arguments []*objects.ArgumentTuple = []*objects.ArgumentTuple{
+				&objects.ArgumentTuple{
+					PositionStart: (*ast_node.Left).StartPosition(),
+					PositionEnd:   (*ast_node.Left).EndPosition(),
+					Argument:      left,
+				},
+				&objects.ArgumentTuple{
+					PositionStart: (*ast_node.Right).StartPosition(),
+					PositionEnd:   (*ast_node.Right).EndPosition(),
+					Argument:      right,
+				},
+			}
+
+			rt = subtract_function(ast_node.StartPosition(), ast_node.EndPosition(), &arguments)
+			if rt.Error != nil {
+				return runtime.RuntimeResult[*objects.Object]{
+					Result: nil,
+					Error:  rt.Error,
+				}
+			}
+
+			return runtime.RuntimeResult[*objects.Object]{
+				Result: rt.Result,
+				Error:  nil,
+			}
+		}
+	}
+
+	return runtime.RuntimeResult[*objects.Object]{
+		Result: nil,
+		Error:  nil,
+	}
+}
