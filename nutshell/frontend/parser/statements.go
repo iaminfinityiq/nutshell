@@ -3,24 +3,24 @@ package parser
 import "nutshell/runtime"
 
 type Block struct {
-	Body *[]*Statement
+	Body []*Statement
 }
 
 func (b Block) StartPosition() *runtime.Position {
-	if len(*b.Body) == 0 {
+	if len(b.Body) == 0 {
 		return nil
 	}
 
-	var returned runtime.Position = (*(*b.Body)[0]).StartPosition().Copy()
+	var returned runtime.Position = (*b.Body[0]).StartPosition().Copy()
 	return &returned
 }
 
 func (b Block) EndPosition() *runtime.Position {
-	if len(*b.Body) == 0 {
+	if len(b.Body) == 0 {
 		return nil
 	}
 
-	var returned runtime.Position = (*(*b.Body)[0]).StartPosition().Copy()
+	var returned runtime.Position = (*b.Body[len(b.Body)-1]).StartPosition().Copy()
 	return &returned
 }
 
@@ -31,7 +31,7 @@ func (b Block) Kind() int {
 func InitBlock() *Block {
 	var body []*Statement = []*Statement{}
 	var returned Block = Block{
-		Body: &body,
+		Body: body,
 	}
 
 	return &returned
