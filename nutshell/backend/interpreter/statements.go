@@ -8,7 +8,7 @@ import (
 
 func EvaluateBlock(heap *objects.Heap, scope *objects.Scope, ast_node *parser.Block) runtime.RuntimeResult[*objects.Object] {
 	var last_evaluated *objects.Object = nil
-	for _, statement := range *ast_node.Body {
+	for _, statement := range ast_node.Body {
 		var rt runtime.RuntimeResult[*objects.Object] = Evaluate(heap, scope, statement)
 		if rt.Error != nil {
 			return runtime.RuntimeResult[*objects.Object]{
