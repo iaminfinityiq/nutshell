@@ -3,7 +3,6 @@ package runtime
 import (
 	"fmt"
 	"strconv"
-	"strings"
 
 	"github.com/fatih/color"
 )
@@ -26,17 +25,16 @@ func (e *Error) DisplayError() {
 
 	fmt.Printf(" %s\nFile %s.%s, line %d\n", e.Reason, e.StartPosition.FileName, e.StartPosition.FileExtension, e.StartPosition.Line+1)
 
+	c = color.New(color.FgHiGreen).Add(color.Bold)
 	var offset int = len(strconv.FormatInt(int64(e.EndPosition.Line+1), 10)) + 4
 	if e.StartPosition.Line == e.EndPosition.Line {
-		c := color.New(color.FgGreen).Add(color.Bold)
-		c.Printf("\n%d || ", e.StartPosition.Line+1)
-		fmt.Printf("%s\n", e.StartPosition.GetLine(e.StartPosition.Line))
-
-		for i := 0; i < e.StartPosition.Column+offset; i++ {
+		c.Printf("%d || ", e.StartPosition.Line+1)
+		fmt.Println(e.StartPosition.GetLine(e.StartPosition.Line))
+		for j := 0; j < e.StartPosition.Column+offset; j++ {
 			fmt.Print(" ")
 		}
 
-		for i := e.StartPosition.Column + offset; i < e.EndPosition.Column+offset; i++ {
+		for j := e.StartPosition.Column + offset; j < e.EndPosition.Column+offset; j++ {
 			fmt.Print("^")
 		}
 
@@ -45,46 +43,44 @@ func (e *Error) DisplayError() {
 	}
 
 	for i := e.StartPosition.Line; i <= e.EndPosition.Line; i++ {
-		var line string = e.StartPosition.GetLine(i + 1)
-		var index_offset int = len(strconv.FormatInt(int64(i+1), 10))
-
-		fmt.Print("\n")
-		if strings.TrimSpace(line) == "" {
-			c := color.New(color.FgGreen).Add(color.Bold)
-			for i := index_offset; i <= offset-4; i++ {
-				c.Printf("0")
-			}
-
-			c.Printf("%d ||\n", i+1)
-			continue
-		}
-
-		c := color.New(color.FgGreen).Add(color.Bold)
-		for i := index_offset; i <= offset-4; i++ {
+		var line_repr string = strconv.FormatInt(int64(i+1), 10)
+		for j := 0; j < offset-4-len(line_repr); j++ {
 			c.Printf("0")
 		}
 
-		c.Printf("%d ||\n", i+1)
-		fmt.Println(line)
+		c.Printf("%d || ", i+1)
 
-		if i == e.StartPosition.Line {
-			for j := 0; j < e.StartPosition.Column+offset; j++ {
-				fmt.Print(" ")
-			}
+		var line string = e.StartPosition.GetLine(i)
+		fmt.Print(line)
+		if line != "" {
+			fmt.Print("\n")
+			if i == e.StartPosition.Line {
+				for j := 0; j < e.StartPosition.Column+offset; j++ {
+					fmt.Print(" ")
+				}
 
-			for j := e.StartPosition.Column + offset; j < len(line)+offset; j++ {
-				fmt.Print("^")
-			}
-		} else if i == e.EndPosition.Line {
-			for j := offset; j < e.EndPosition.Column+offset; j++ {
-				fmt.Print("^")
-			}
-		} else {
-			for j := offset; j < len(line)+offset; j++ {
-				fmt.Print("^")
+				for j := e.StartPosition.Column + offset; j < len(line)+offset; j++ {
+					fmt.Print("^")
+				}
+			} else if i == e.EndPosition.Line {
+				for j := 0; j < offset; j++ {
+					fmt.Print(" ")
+				}
+
+				for j := offset; j < e.EndPosition.Column+offset; j++ {
+					fmt.Print("^")
+				}
+			} else {
+				for j := 0; j < offset; j++ {
+					fmt.Print(" ")
+				}
+
+				for j := offset; j < len(line)+offset; j++ {
+					fmt.Print("^")
+				}
 			}
 		}
-
+		
 		fmt.Print("\n")
 	}
 }
