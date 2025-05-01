@@ -67,7 +67,7 @@ func EvaluateBinaryExpression(heap *objects.Heap, scope *objects.Scope, ast_node
 	case lexer.Plus:
 		add_attribute, ok := left.Access("add")
 		if !ok {
-			var err runtime.Error = runtime.TypeError(ast_node.StartPosition(), ast_node.EndPosition(), fmt.Sprintf("Cannot perforn operation '+' on %s and %s", left.DataType, right.DataType))
+			var err runtime.Error = runtime.TypeError(ast_node.StartPosition(), ast_node.EndPosition(), fmt.Sprintf("Cannot perform operation '+' on %s and %s", left.DataType, right.DataType))
 			return runtime.RuntimeResult[*objects.Object]{
 				Result: nil,
 				Error:  &err,
@@ -106,7 +106,7 @@ func EvaluateBinaryExpression(heap *objects.Heap, scope *objects.Scope, ast_node
 	case lexer.Minus:
 		subtract_attribute, ok := left.Access("subtract")
 		if !ok {
-			var err runtime.Error = runtime.TypeError(ast_node.StartPosition(), ast_node.EndPosition(), fmt.Sprintf("Cannot perforn operation '-' on %s and %s", left.DataType, right.DataType))
+			var err runtime.Error = runtime.TypeError(ast_node.StartPosition(), ast_node.EndPosition(), fmt.Sprintf("Cannot perform operation '-' on %s and %s", left.DataType, right.DataType))
 			return runtime.RuntimeResult[*objects.Object]{
 				Result: nil,
 				Error:  &err,
@@ -145,7 +145,7 @@ func EvaluateBinaryExpression(heap *objects.Heap, scope *objects.Scope, ast_node
 	case lexer.Multiply:
 		multiply_attribute, ok := left.Access("multiply")
 		if !ok {
-			var err runtime.Error = runtime.TypeError(ast_node.StartPosition(), ast_node.EndPosition(), fmt.Sprintf("Cannot perforn operation '*' on %s and %s", left.DataType, right.DataType))
+			var err runtime.Error = runtime.TypeError(ast_node.StartPosition(), ast_node.EndPosition(), fmt.Sprintf("Cannot perform operation '*' on %s and %s", left.DataType, right.DataType))
 			return runtime.RuntimeResult[*objects.Object]{
 				Result: nil,
 				Error:  &err,
@@ -153,7 +153,7 @@ func EvaluateBinaryExpression(heap *objects.Heap, scope *objects.Scope, ast_node
 		}
 
 		if multiply_attribute.DataType == "builtin_function" {
-			var subtract_function func(*runtime.Position, *runtime.Position, *[]*objects.ArgumentTuple) runtime.RuntimeResult[*objects.Object] = multiply_attribute.Value.(func(*runtime.Position, *runtime.Position, *[]*objects.ArgumentTuple) runtime.RuntimeResult[*objects.Object])
+			var multiply_fraction func(*runtime.Position, *runtime.Position, *[]*objects.ArgumentTuple) runtime.RuntimeResult[*objects.Object] = multiply_attribute.Value.(func(*runtime.Position, *runtime.Position, *[]*objects.ArgumentTuple) runtime.RuntimeResult[*objects.Object])
 
 			var arguments []*objects.ArgumentTuple = []*objects.ArgumentTuple{
 				&objects.ArgumentTuple{
@@ -168,7 +168,85 @@ func EvaluateBinaryExpression(heap *objects.Heap, scope *objects.Scope, ast_node
 				},
 			}
 
-			rt = subtract_function(ast_node.StartPosition(), ast_node.EndPosition(), &arguments)
+			rt = multiply_fraction(ast_node.StartPosition(), ast_node.EndPosition(), &arguments)
+			if rt.Error != nil {
+				return runtime.RuntimeResult[*objects.Object]{
+					Result: nil,
+					Error:  rt.Error,
+				}
+			}
+
+			return runtime.RuntimeResult[*objects.Object]{
+				Result: rt.Result,
+				Error:  nil,
+			}
+		}
+	case lexer.Divide:
+		divide_attribute, ok := left.Access("divide")
+		if !ok {
+			var err runtime.Error = runtime.TypeError(ast_node.StartPosition(), ast_node.EndPosition(), fmt.Sprintf("Cannot perform operation '/' on %s and %s", left.DataType, right.DataType))
+			return runtime.RuntimeResult[*objects.Object]{
+				Result: nil,
+				Error:  &err,
+			}
+		}
+
+		if divide_attribute.DataType == "builtin_function" {
+			var divide_function func(*runtime.Position, *runtime.Position, *[]*objects.ArgumentTuple) runtime.RuntimeResult[*objects.Object] = divide_attribute.Value.(func(*runtime.Position, *runtime.Position, *[]*objects.ArgumentTuple) runtime.RuntimeResult[*objects.Object])
+
+			var arguments []*objects.ArgumentTuple = []*objects.ArgumentTuple{
+				&objects.ArgumentTuple{
+					PositionStart: (*ast_node.Left).StartPosition(),
+					PositionEnd:   (*ast_node.Left).EndPosition(),
+					Argument:      left,
+				},
+				&objects.ArgumentTuple{
+					PositionStart: (*ast_node.Right).StartPosition(),
+					PositionEnd:   (*ast_node.Right).EndPosition(),
+					Argument:      right,
+				},
+			}
+
+			rt = divide_function(ast_node.StartPosition(), ast_node.EndPosition(), &arguments)
+			if rt.Error != nil {
+				return runtime.RuntimeResult[*objects.Object]{
+					Result: nil,
+					Error:  rt.Error,
+				}
+			}
+
+			return runtime.RuntimeResult[*objects.Object]{
+				Result: rt.Result,
+				Error:  nil,
+			}
+		}
+	case lexer.Modulo:
+		divide_attribute, ok := left.Access("modulo")
+		if !ok {
+			var err runtime.Error = runtime.TypeError(ast_node.StartPosition(), ast_node.EndPosition(), "Cannot perform operation '%' on " + left.DataType + " and " + right.DataType)
+			return runtime.RuntimeResult[*objects.Object]{
+				Result: nil,
+				Error:  &err,
+			}
+		}
+
+		if divide_attribute.DataType == "builtin_function" {
+			var divide_function func(*runtime.Position, *runtime.Position, *[]*objects.ArgumentTuple) runtime.RuntimeResult[*objects.Object] = divide_attribute.Value.(func(*runtime.Position, *runtime.Position, *[]*objects.ArgumentTuple) runtime.RuntimeResult[*objects.Object])
+
+			var arguments []*objects.ArgumentTuple = []*objects.ArgumentTuple{
+				&objects.ArgumentTuple{
+					PositionStart: (*ast_node.Left).StartPosition(),
+					PositionEnd:   (*ast_node.Left).EndPosition(),
+					Argument:      left,
+				},
+				&objects.ArgumentTuple{
+					PositionStart: (*ast_node.Right).StartPosition(),
+					PositionEnd:   (*ast_node.Right).EndPosition(),
+					Argument:      right,
+				},
+			}
+
+			rt = divide_function(ast_node.StartPosition(), ast_node.EndPosition(), &arguments)
 			if rt.Error != nil {
 				return runtime.RuntimeResult[*objects.Object]{
 					Result: nil,
