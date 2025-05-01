@@ -39,24 +39,24 @@ func (n *NutParser) expect(token_type int) runtime.RuntimeResult[*lexer.Token] {
 		var err runtime.Error = runtime.SyntaxError(n.CurrentToken.StartPosition, n.CurrentToken.EndPosition, fmt.Sprintf("Expected %d, got %s", token_type, n.get_current_token_value()))
 		return runtime.RuntimeResult[*lexer.Token]{
 			Result: nil,
-			Error: &err,
+			Error:  &err,
 		}
 	}
 
 	return runtime.RuntimeResult[*lexer.Token]{
 		Result: n.CurrentToken,
-		Error: nil,
+		Error:  nil,
 	}
 }
 
 func (n *NutParser) ParseBlock() runtime.RuntimeResult[*Block] {
 	var block Block = *InitBlock()
-	for n.Position < len(*n.Tokens) - 1 {
+	for n.Position < len(*n.Tokens)-1 {
 		for n.get_current_token_type() == lexer.Semicolon {
 			n.advance()
 		}
 
-		if n.Position == len(*n.Tokens) - 1 {
+		if n.Position == len(*n.Tokens)-1 {
 			break
 		}
 
@@ -68,7 +68,7 @@ func (n *NutParser) ParseBlock() runtime.RuntimeResult[*Block] {
 			}
 		}
 
-		*block.Body = append(*block.Body, rt.Result)
+		block.Body = append(block.Body, rt.Result)
 	}
 
 	return runtime.RuntimeResult[*Block]{
@@ -161,7 +161,7 @@ func (n *NutParser) parse_multiplicative_expression() runtime.RuntimeResult[*Exp
 	}
 
 	var left *Expression = rt.Result
-	for n.get_current_token_type() == lexer.Multiply || n.get_current_token_type() == lexer.Divide {
+	for n.get_current_token_type() == lexer.Multiply || n.get_current_token_type() == lexer.Divide || n.get_current_token_type() == lexer.Modulo {
 		var operator int = n.get_current_token_type()
 		n.advance()
 
@@ -226,9 +226,9 @@ func (n *NutParser) parse_unary_expression() runtime.RuntimeResult[*Expression] 
 	}
 
 	var unary_expression Expression = interface{}(UnaryExpression{
-		Sign:  sign,
+		Sign:           sign,
 		StartSignToken: start_token,
-		Value: rt.Result,
+		Value:          rt.Result,
 	}).(Expression)
 
 	return runtime.RuntimeResult[*Expression]{
@@ -243,7 +243,8 @@ func (n *NutParser) parse_primary_expression() runtime.RuntimeResult[*Expression
 	case lexer.Int:
 		value, _ := strconv.ParseInt(n.get_current_token_value(), 10, 64)
 		var int_expression Expression = interface{}(Int{
-			Value: value,
+			Position: n.CurrentToken.StartPosition,
+			Value:    value,
 		}).(Expression)
 
 		returned = runtime.RuntimeResult[*Expression]{
@@ -253,7 +254,8 @@ func (n *NutParser) parse_primary_expression() runtime.RuntimeResult[*Expression
 	case lexer.Double:
 		value, _ := strconv.ParseFloat(n.get_current_token_value(), 64)
 		var double_expression Expression = interface{}(Double{
-			Value: value,
+			Position: n.CurrentToken.StartPosition,
+			Value:    value,
 		}).(Expression)
 
 		returned = runtime.RuntimeResult[*Expression]{
@@ -268,24 +270,25 @@ func (n *NutParser) parse_primary_expression() runtime.RuntimeResult[*Expression
 		if rt.Error != nil {
 			return runtime.RuntimeResult[*Expression]{
 				Result: nil,
-				Error: rt.Error,
+				Error:  rt.Error,
 			}
 		}
 
 		var expression *Expression = rt.Result
+
 		var rt2 runtime.RuntimeResult[*lexer.Token] = n.expect(lexer.RightParenthese)
 		if rt2.Error != nil {
 			return runtime.RuntimeResult[*Expression]{
 				Result: nil,
-				Error: rt2.Error,
+				Error:  rt2.Error,
 			}
 		}
 
 		var right_parenthese *lexer.Token = rt2.Result
 
 		var bracket_expression Expression = interface{}(BracketExpression{
-			Value: expression,
-			LeftParentheseToken: left_parenthese,
+			Value:                expression,
+			LeftParentheseToken:  left_parenthese,
 			RightParentheseToken: right_parenthese,
 		}).(Expression)
 
@@ -306,8 +309,8 @@ func (n *NutParser) parse_primary_expression() runtime.RuntimeResult[*Expression
 
 func InitNutParser(tokens *[]*lexer.Token) *NutParser {
 	var parser *NutParser = &NutParser{
-		Tokens: tokens,
-		Position: -1,
+		Tokens:       tokens,
+		Position:     -1,
 		CurrentToken: nil,
 	}
 
