@@ -89,7 +89,6 @@ func (i Int) StartPosition() *runtime.Position {
 
 func (i Int) EndPosition() *runtime.Position {
 	var returned runtime.Position = i.IntToken.EndPosition.Copy()
-	returned.Advance(nil)
 	return &returned
 }
 
@@ -113,7 +112,6 @@ func (d Double) StartPosition() *runtime.Position {
 
 func (d Double) EndPosition() *runtime.Position {
 	var returned runtime.Position = d.DoubleToken.EndPosition.Copy()
-	returned.Advance(nil)
 	return &returned
 }
 
