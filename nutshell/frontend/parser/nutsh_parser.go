@@ -318,6 +318,16 @@ func (n *NutshParser) parse_primary_expression() runtime.RuntimeResult[*Expressi
 			Result: &double_expression,
 			Error:  nil,
 		}
+	case lexer.Identifier:
+		var identifier_expression Expression = interface{}(Identifier{
+			VariableName:    n.CurrentToken.Value,
+			IdentifierToken: n.CurrentToken,
+		}).(Expression)
+
+		returned = runtime.RuntimeResult[*Expression]{
+			Result: &identifier_expression,
+			Error:  nil,
+		}
 	case lexer.LeftParenthese:
 		var left_parenthese *lexer.Token = n.CurrentToken
 		n.advance()
