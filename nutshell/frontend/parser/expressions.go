@@ -79,16 +79,16 @@ func (u UnaryExpression) ExpressionConfirm() {
 
 type Int struct {
 	Value    int64
-	Position *runtime.Position
+	IntToken *lexer.Token
 }
 
 func (i Int) StartPosition() *runtime.Position {
-	var returned runtime.Position = i.Position.Copy()
+	var returned runtime.Position = i.IntToken.StartPosition.Copy()
 	return &returned
 }
 
 func (i Int) EndPosition() *runtime.Position {
-	var returned runtime.Position = i.Position.Copy()
+	var returned runtime.Position = i.IntToken.EndPosition.Copy()
 	returned.Advance(nil)
 	return &returned
 }
@@ -103,16 +103,16 @@ func (i Int) ExpressionConfirm() {
 
 type Double struct {
 	Value    float64
-	Position *runtime.Position
+	DoubleToken *lexer.Token
 }
 
 func (d Double) StartPosition() *runtime.Position {
-	var returned runtime.Position = d.Position.Copy()
+	var returned runtime.Position = d.DoubleToken.StartPosition.Copy()
 	return &returned
 }
 
 func (d Double) EndPosition() *runtime.Position {
-	var returned runtime.Position = d.Position.Copy()
+	var returned runtime.Position = d.DoubleToken.EndPosition.Copy()
 	returned.Advance(nil)
 	return &returned
 }
