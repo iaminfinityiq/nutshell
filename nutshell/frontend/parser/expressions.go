@@ -101,7 +101,7 @@ func (i Int) ExpressionConfirm() {
 }
 
 type Double struct {
-	Value    float64
+	Value       float64
 	DoubleToken *lexer.Token
 }
 
@@ -121,4 +121,27 @@ func (d Double) Kind() int {
 
 func (d Double) ExpressionConfirm() {
 
+}
+
+type Identifier struct {
+	VariableName    string
+	IdentifierToken *lexer.Token
+}
+
+func (i Identifier) StartPosition() *runtime.Position {
+	var returned runtime.Position = i.IdentifierToken.StartPosition.Copy()
+	return &returned
+}
+
+func (i Identifier) EndPosition() *runtime.Position {
+	var returned runtime.Position = i.IdentifierToken.EndPosition.Copy()
+	return &returned
+}
+
+func (i Identifier) Kind() int {
+	return IdentifierExpr
+}
+
+func (i Identifier) ExpressionConfirm() {
+	
 }
