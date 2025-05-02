@@ -80,6 +80,19 @@ func (n *NutParser) ParseBlock() runtime.RuntimeResult[*Block] {
 func (n *NutParser) parse_statement() runtime.RuntimeResult[*Statement] {
 	var returned runtime.RuntimeResult[*Statement]
 	switch n.get_current_token_type() {
+	case lexer.Let:
+		var rt runtime.RuntimeResult[*Statement] = n.parse_let_variable_declaration()
+		if rt.Error != nil {
+			return runtime.RuntimeResult[*Statement]{
+				Result: nil,
+				Error:  rt.Error,
+			}
+		}
+
+		returned = runtime.RuntimeResult[*Statement]{
+			Result: rt.Result,
+			Error:  nil,
+		}
 	default:
 		var rt runtime.RuntimeResult[*Expression] = n.parse_expression()
 		if rt.Error != nil {
@@ -97,6 +110,49 @@ func (n *NutParser) parse_statement() runtime.RuntimeResult[*Statement] {
 	}
 
 	return returned
+}
+
+func (n *NutParser) parse_let_variable_declaration() runtime.RuntimeResult[*Statement] {
+	var let_token *lexer.Token = n.CurrentToken
+	n.advance()
+	var rt runtime.RuntimeResult[*lexer.Token] = n.expect(lexer.Identifier)
+	if rt.Error != nil {
+		return runtime.RuntimeResult[*Statement]{
+			Result: nil,
+			Error:  rt.Error,
+		}
+	}
+
+	var variable_name string = rt.Result.Value
+	n.advance()
+	rt = n.expect(lexer.Equals)
+	if rt.Error != nil {
+		return runtime.RuntimeResult[*Statement]{
+			Result: nil,
+			Error:  rt.Error,
+		}
+	}
+
+	n.advance()
+	var rt2 runtime.RuntimeResult[*Expression] = n.parse_expression()
+	if rt2.Error != nil {
+		return runtime.RuntimeResult[*Statement]{
+			Result: nil,
+			Error:  rt.Error,
+		}
+	}
+
+	var value *Expression = rt2.Result
+	var variable_declaration_statement Statement = interface{}(VariableDeclaration{
+		LetToken:     let_token,
+		VariableName: variable_name,
+		Value:        value,
+	}).(Statement)
+
+	return runtime.RuntimeResult[*Statement]{
+		Result: &variable_declaration_statement,
+		Error:  nil,
+	}
 }
 
 func (n *NutParser) parse_expression() runtime.RuntimeResult[*Expression] {
@@ -243,8 +299,8 @@ func (n *NutParser) parse_primary_expression() runtime.RuntimeResult[*Expression
 	case lexer.Int:
 		value, _ := strconv.ParseInt(n.get_current_token_value(), 10, 64)
 		var int_expression Expression = interface{}(Int{
-			Position: n.CurrentToken.StartPosition,
 			Value:    value,
+			IntToken: n.CurrentToken,
 		}).(Expression)
 
 		returned = runtime.RuntimeResult[*Expression]{
@@ -254,8 +310,8 @@ func (n *NutParser) parse_primary_expression() runtime.RuntimeResult[*Expression
 	case lexer.Double:
 		value, _ := strconv.ParseFloat(n.get_current_token_value(), 64)
 		var double_expression Expression = interface{}(Double{
-			Position: n.CurrentToken.StartPosition,
-			Value:    value,
+			Value:       value,
+			DoubleToken: n.CurrentToken,
 		}).(Expression)
 
 		returned = runtime.RuntimeResult[*Expression]{
