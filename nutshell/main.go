@@ -1,19 +1,20 @@
 package main
 
 import (
+	"fmt"
 	"nutshell/backend/interpreter"
 	"nutshell/backend/objects"
 	"nutshell/frontend/lexer"
 	"nutshell/frontend/parser"
 	"nutshell/runtime"
-
-	"github.com/davecgh/go-spew/spew"
+	//"github.com/davecgh/go-spew/spew"
 )
 
 func main() {
 	var file_extension string = "nutsh"
-	var test string = `let a = 4
-a`
+	var test string = `
+1/3
+`
 
 	var l *lexer.Lexer = lexer.InitLexer("nutshell", file_extension, test)
 	var rt runtime.RuntimeResult[*[]*lexer.Token] = l.Tokenize()
@@ -58,5 +59,6 @@ a`
 		return
 	}
 
-	spew.Dump(rt3.Result)
+	repr, _ := rt3.Result.Access("repr")
+	fmt.Println(repr.Value)
 }
