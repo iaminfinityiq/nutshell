@@ -3,15 +3,18 @@ package objects
 import (
 	"fmt"
 	"nutshell/runtime"
+	"strconv"
 )
 
-func MakeBuiltInFunction(heap *Heap, value func(*runtime.Position, *runtime.Position, *[]*ArgumentTuple) runtime.RuntimeResult[*Object]) *Object {
+func MakeBuiltInFunction(heap *Heap, scope *Scope, name string, value func(*runtime.Position, *runtime.Position, *[]*ArgumentTuple) runtime.RuntimeResult[*Object]) *Object {
 	var returned *Object = &Object{
 		DataType: "builtin_function",
 		Value:    value,
 		Properties: &Scope{
-			Heap:  heap,
-			Scope: make(map[string]int),
+			Parent:      scope,
+			Heap:        heap,
+			Scope:       make(map[string]int),
+			ConstantMap: make(map[string]bool),
 		},
 		Heap: heap,
 		Flag: true,
@@ -20,18 +23,23 @@ func MakeBuiltInFunction(heap *Heap, value func(*runtime.Position, *runtime.Posi
 	var heap_index int = heap.Add(returned)
 	returned.HeapIndex = heap_index
 
+	returned.Assign("name", MakeString(heap, scope, name))
+
 	returned.Assign("call", returned)
+	returned.Assign("repr", MakeString(heap, scope, fmt.Sprintf("<builtin_function %s>", name)))
 
 	return returned
 }
 
-func MakeInt(heap *Heap, value int64) *Object {
+func MakeString(heap *Heap, scope *Scope, value string) *Object {
 	var returned *Object = &Object{
-		DataType: "int",
+		DataType: "string",
 		Value:    value,
 		Properties: &Scope{
-			Heap:  heap,
-			Scope: make(map[string]int),
+			Parent:      scope,
+			Heap:        heap,
+			Scope:       make(map[string]int),
+			ConstantMap: make(map[string]bool),
 		},
 		Heap: heap,
 		Flag: true,
@@ -40,7 +48,29 @@ func MakeInt(heap *Heap, value int64) *Object {
 	var heap_index int = heap.Add(returned)
 	returned.HeapIndex = heap_index
 
-	returned.Assign("add", MakeBuiltInFunction(heap, func(position_start *runtime.Position, position_end *runtime.Position, arguments *[]*ArgumentTuple) runtime.RuntimeResult[*Object] {
+	returned.Assign("repr", returned)
+
+	return returned
+}
+
+func MakeInt(heap *Heap, scope *Scope, value int64) *Object {
+	var returned *Object = &Object{
+		DataType: "int",
+		Value:    value,
+		Properties: &Scope{
+			Parent:      scope,
+			Heap:        heap,
+			Scope:       make(map[string]int),
+			ConstantMap: make(map[string]bool),
+		},
+		Heap: heap,
+		Flag: true,
+	}
+
+	var heap_index int = heap.Add(returned)
+	returned.HeapIndex = heap_index
+
+	returned.Assign("add", MakeBuiltInFunction(heap, scope, "add", func(position_start *runtime.Position, position_end *runtime.Position, arguments *[]*ArgumentTuple) runtime.RuntimeResult[*Object] {
 		if len(*arguments) != 2 {
 			var err runtime.Error = runtime.ArgumentError(position_start, position_end, fmt.Sprintf("Expected 2 argument in 'add' function, got %d/1", len(*arguments)))
 			return runtime.RuntimeResult[*Object]{
@@ -56,7 +86,7 @@ func MakeInt(heap *Heap, value int64) *Object {
 		case "int":
 			var right int64 = (*arguments)[1].Argument.Value.(int64)
 			return runtime.RuntimeResult[*Object]{
-				Result: MakeInt(heap, left+right),
+				Result: MakeInt(heap, scope, left+right),
 				Error:  nil,
 			}
 		case "double":
@@ -68,7 +98,7 @@ func MakeInt(heap *Heap, value int64) *Object {
 			}
 
 			return runtime.RuntimeResult[*Object]{
-				Result: MakeDouble(heap, float64(left)+right),
+				Result: MakeDouble(heap, scope, float64(left)+right),
 				Error:  nil,
 			}
 		default:
@@ -80,7 +110,7 @@ func MakeInt(heap *Heap, value int64) *Object {
 		}
 	}))
 
-	returned.Assign("subtract", MakeBuiltInFunction(heap, func(position_start *runtime.Position, position_end *runtime.Position, arguments *[]*ArgumentTuple) runtime.RuntimeResult[*Object] {
+	returned.Assign("subtract", MakeBuiltInFunction(heap, scope, "subtract", func(position_start *runtime.Position, position_end *runtime.Position, arguments *[]*ArgumentTuple) runtime.RuntimeResult[*Object] {
 		if len(*arguments) != 2 {
 			var err runtime.Error = runtime.ArgumentError(position_start, position_end, fmt.Sprintf("Expected 2 argument in 'subtract' function, got %d/1", len(*arguments)))
 			return runtime.RuntimeResult[*Object]{
@@ -96,18 +126,18 @@ func MakeInt(heap *Heap, value int64) *Object {
 		case "int":
 			var right int64 = (*arguments)[1].Argument.Value.(int64)
 			return runtime.RuntimeResult[*Object]{
-				Result: MakeInt(heap, left-right),
+				Result: MakeInt(heap, scope, left-right),
 				Error:  nil,
 			}
 		case "double":
 			var right float64
-		if right_type == "int" {
-			right = float64((*arguments)[1].Argument.Value.(int64))
-		} else {
-			right = (*arguments)[1].Argument.Value.(float64)
-		}
+			if right_type == "int" {
+				right = float64((*arguments)[1].Argument.Value.(int64))
+			} else {
+				right = (*arguments)[1].Argument.Value.(float64)
+			}
 			return runtime.RuntimeResult[*Object]{
-				Result: MakeDouble(heap, float64(left)-right),
+				Result: MakeDouble(heap, scope, float64(left)-right),
 				Error:  nil,
 			}
 		default:
@@ -119,7 +149,7 @@ func MakeInt(heap *Heap, value int64) *Object {
 		}
 	}))
 
-	returned.Assign("multiply", MakeBuiltInFunction(heap, func(position_start *runtime.Position, position_end *runtime.Position, arguments *[]*ArgumentTuple) runtime.RuntimeResult[*Object] {
+	returned.Assign("multiply", MakeBuiltInFunction(heap, scope, "multiply", func(position_start *runtime.Position, position_end *runtime.Position, arguments *[]*ArgumentTuple) runtime.RuntimeResult[*Object] {
 		if len(*arguments) != 2 {
 			var err runtime.Error = runtime.ArgumentError(position_start, position_end, fmt.Sprintf("Expected 2 argument in 'multiply' function, got %d/1", len(*arguments)))
 			return runtime.RuntimeResult[*Object]{
@@ -135,7 +165,7 @@ func MakeInt(heap *Heap, value int64) *Object {
 		case "int":
 			var right int64 = (*arguments)[1].Argument.Value.(int64)
 			return runtime.RuntimeResult[*Object]{
-				Result: MakeInt(heap, left*right),
+				Result: MakeInt(heap, scope, left*right),
 				Error:  nil,
 			}
 		case "double":
@@ -147,7 +177,7 @@ func MakeInt(heap *Heap, value int64) *Object {
 			}
 
 			return runtime.RuntimeResult[*Object]{
-				Result: MakeDouble(heap, float64(left)*right),
+				Result: MakeDouble(heap, scope, float64(left)*right),
 				Error:  nil,
 			}
 		default:
@@ -159,7 +189,7 @@ func MakeInt(heap *Heap, value int64) *Object {
 		}
 	}))
 
-	returned.Assign("divide", MakeBuiltInFunction(heap, func(position_start *runtime.Position, position_end *runtime.Position, arguments *[]*ArgumentTuple) runtime.RuntimeResult[*Object] {
+	returned.Assign("divide", MakeBuiltInFunction(heap, scope, "divide", func(position_start *runtime.Position, position_end *runtime.Position, arguments *[]*ArgumentTuple) runtime.RuntimeResult[*Object] {
 		if len(*arguments) != 2 {
 			var err runtime.Error = runtime.ArgumentError(position_start, position_end, fmt.Sprintf("Expected 2 arguments in 'divide' function, got %d/2", len(*arguments)))
 			return runtime.RuntimeResult[*Object]{
@@ -194,12 +224,12 @@ func MakeInt(heap *Heap, value int64) *Object {
 		}
 
 		return runtime.RuntimeResult[*Object]{
-			Result: MakeDouble(heap, left/right),
+			Result: MakeDouble(heap, scope, left/right),
 			Error:  nil,
 		}
 	}))
 
-	returned.Assign("modulo", MakeBuiltInFunction(heap, func(position_start *runtime.Position, position_end *runtime.Position, arguments *[]*ArgumentTuple) runtime.RuntimeResult[*Object] {
+	returned.Assign("modulo", MakeBuiltInFunction(heap, scope, "modulo", func(position_start *runtime.Position, position_end *runtime.Position, arguments *[]*ArgumentTuple) runtime.RuntimeResult[*Object] {
 		if len(*arguments) != 2 {
 			var err runtime.Error = runtime.ArgumentError(position_start, position_end, fmt.Sprintf("Expected 2 arguments in 'modulo' function, got %d/2", len(*arguments)))
 			return runtime.RuntimeResult[*Object]{
@@ -211,7 +241,7 @@ func MakeInt(heap *Heap, value int64) *Object {
 		var left float64 = float64((*arguments)[0].Argument.Value.(int64))
 		var right_type string = (*arguments)[1].Argument.DataType
 		if right_type != "int" && right_type != "double" {
-			var err runtime.Error = runtime.TypeError((*arguments)[0].PositionStart, (*arguments)[1].PositionEnd, "Cannot perform operation '%' on int and " + right_type)
+			var err runtime.Error = runtime.TypeError((*arguments)[0].PositionStart, (*arguments)[1].PositionEnd, "Cannot perform operation '%' on int and "+right_type)
 			return runtime.RuntimeResult[*Object]{
 				Result: nil,
 				Error:  &err,
@@ -235,23 +265,26 @@ func MakeInt(heap *Heap, value int64) *Object {
 
 		var result float64 = left / right
 		var int_part int64 = int64(result)
-		
+
 		return runtime.RuntimeResult[*Object]{
-			Result: MakeDouble(heap, left - float64(int_part) * right),
+			Result: MakeDouble(heap, scope, left-float64(int_part)*right),
 			Error:  nil,
 		}
 	}))
 
+	returned.Assign("repr", MakeString(heap, scope, strconv.FormatInt(value, 10)))
 	return returned
 }
 
-func MakeDouble(heap *Heap, value float64) *Object {
+func MakeDouble(heap *Heap, scope *Scope, value float64) *Object {
 	var returned *Object = &Object{
 		DataType: "double",
 		Value:    value,
 		Properties: &Scope{
-			Heap:  heap,
-			Scope: make(map[string]int),
+			Parent:      scope,
+			Heap:        heap,
+			Scope:       make(map[string]int),
+			ConstantMap: make(map[string]bool),
 		},
 		Heap: heap,
 		Flag: true,
@@ -260,7 +293,7 @@ func MakeDouble(heap *Heap, value float64) *Object {
 	var heap_index int = heap.Add(returned)
 	returned.HeapIndex = heap_index
 
-	returned.Assign("add", MakeBuiltInFunction(heap, func(position_start *runtime.Position, position_end *runtime.Position, arguments *[]*ArgumentTuple) runtime.RuntimeResult[*Object] {
+	returned.Assign("add", MakeBuiltInFunction(heap, scope, "add", func(position_start *runtime.Position, position_end *runtime.Position, arguments *[]*ArgumentTuple) runtime.RuntimeResult[*Object] {
 		if len(*arguments) != 2 {
 			var err runtime.Error = runtime.ArgumentError(position_start, position_end, fmt.Sprintf("Expected 2 argument in 'add' function, got %d/1", len(*arguments)))
 			return runtime.RuntimeResult[*Object]{
@@ -288,12 +321,12 @@ func MakeDouble(heap *Heap, value float64) *Object {
 		}
 
 		return runtime.RuntimeResult[*Object]{
-			Result: MakeDouble(heap, left+right),
+			Result: MakeDouble(heap, scope, left+right),
 			Error:  nil,
 		}
 	}))
 
-	returned.Assign("subtract", MakeBuiltInFunction(heap, func(position_start *runtime.Position, position_end *runtime.Position, arguments *[]*ArgumentTuple) runtime.RuntimeResult[*Object] {
+	returned.Assign("subtract", MakeBuiltInFunction(heap, scope, "subtract", func(position_start *runtime.Position, position_end *runtime.Position, arguments *[]*ArgumentTuple) runtime.RuntimeResult[*Object] {
 		if len(*arguments) != 2 {
 			var err runtime.Error = runtime.ArgumentError(position_start, position_end, fmt.Sprintf("Expected 2 argument in 'subtract' function, got %d/1", len(*arguments)))
 			return runtime.RuntimeResult[*Object]{
@@ -319,14 +352,14 @@ func MakeDouble(heap *Heap, value float64) *Object {
 		} else {
 			right = (*arguments)[1].Argument.Value.(float64)
 		}
-		
+
 		return runtime.RuntimeResult[*Object]{
-			Result: MakeDouble(heap, left-right),
+			Result: MakeDouble(heap, scope, left-right),
 			Error:  nil,
 		}
 	}))
 
-	returned.Assign("multiply", MakeBuiltInFunction(heap, func(position_start *runtime.Position, position_end *runtime.Position, arguments *[]*ArgumentTuple) runtime.RuntimeResult[*Object] {
+	returned.Assign("multiply", MakeBuiltInFunction(heap, scope, "multiply", func(position_start *runtime.Position, position_end *runtime.Position, arguments *[]*ArgumentTuple) runtime.RuntimeResult[*Object] {
 		if len(*arguments) != 2 {
 			var err runtime.Error = runtime.ArgumentError(position_start, position_end, fmt.Sprintf("Expected 2 argument in 'multiply' function, got %d/1", len(*arguments)))
 			return runtime.RuntimeResult[*Object]{
@@ -354,12 +387,12 @@ func MakeDouble(heap *Heap, value float64) *Object {
 		}
 
 		return runtime.RuntimeResult[*Object]{
-			Result: MakeDouble(heap, left*right),
+			Result: MakeDouble(heap, scope, left*right),
 			Error:  nil,
 		}
 	}))
 
-	returned.Assign("divide", MakeBuiltInFunction(heap, func(position_start *runtime.Position, position_end *runtime.Position, arguments *[]*ArgumentTuple) runtime.RuntimeResult[*Object] {
+	returned.Assign("divide", MakeBuiltInFunction(heap, scope, "divide", func(position_start *runtime.Position, position_end *runtime.Position, arguments *[]*ArgumentTuple) runtime.RuntimeResult[*Object] {
 		if len(*arguments) != 2 {
 			var err runtime.Error = runtime.ArgumentError(position_start, position_end, fmt.Sprintf("Expected 2 argument in 'divide' function, got %d/1", len(*arguments)))
 			return runtime.RuntimeResult[*Object]{
@@ -395,12 +428,12 @@ func MakeDouble(heap *Heap, value float64) *Object {
 		}
 
 		return runtime.RuntimeResult[*Object]{
-			Result: MakeDouble(heap, left/right),
+			Result: MakeDouble(heap, scope, left/right),
 			Error:  nil,
 		}
 	}))
 
-	returned.Assign("modulo", MakeBuiltInFunction(heap, func(position_start *runtime.Position, position_end *runtime.Position, arguments *[]*ArgumentTuple) runtime.RuntimeResult[*Object] {
+	returned.Assign("modulo", MakeBuiltInFunction(heap, scope, "modulo", func(position_start *runtime.Position, position_end *runtime.Position, arguments *[]*ArgumentTuple) runtime.RuntimeResult[*Object] {
 		if len(*arguments) != 2 {
 			var err runtime.Error = runtime.ArgumentError(position_start, position_end, fmt.Sprintf("Expected 2 arguments in 'modulo' function, got %d/2", len(*arguments)))
 			return runtime.RuntimeResult[*Object]{
@@ -412,7 +445,7 @@ func MakeDouble(heap *Heap, value float64) *Object {
 		var left float64 = (*arguments)[0].Argument.Value.(float64)
 		var right_type string = (*arguments)[1].Argument.DataType
 		if right_type != "int" && right_type != "double" {
-			var err runtime.Error = runtime.TypeError((*arguments)[0].PositionStart, (*arguments)[1].PositionEnd, "Cannot perform operation '%' on double and " + right_type)
+			var err runtime.Error = runtime.TypeError((*arguments)[0].PositionStart, (*arguments)[1].PositionEnd, "Cannot perform operation '%' on double and "+right_type)
 			return runtime.RuntimeResult[*Object]{
 				Result: nil,
 				Error:  &err,
@@ -436,12 +469,13 @@ func MakeDouble(heap *Heap, value float64) *Object {
 
 		var result float64 = left / right
 		var int_part int64 = int64(result)
-		
+
 		return runtime.RuntimeResult[*Object]{
-			Result: MakeDouble(heap, left - float64(int_part) * right),
+			Result: MakeDouble(heap, scope, left-float64(int_part)*right),
 			Error:  nil,
 		}
 	}))
 
+	returned.Assign("repr", MakeString(heap, scope, strconv.FormatFloat(value, 'f', -1, 64)))
 	return returned
 }
