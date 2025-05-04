@@ -5,6 +5,29 @@ import (
 	"nutshell/runtime"
 )
 
+type AssignmentExpression struct {
+	Callee        *Expression
+	Value         *Expression
+	PositionStart *runtime.Position
+	PositionEnd   *runtime.Position
+}
+
+func (a AssignmentExpression) StartPosition() *runtime.Position {
+	return a.PositionStart
+}
+
+func (a AssignmentExpression) EndPosition() *runtime.Position {
+	return a.PositionEnd
+}
+
+func (a AssignmentExpression) Kind() int {
+	return AssignmentExpr
+}
+
+func (a AssignmentExpression) ExpressionConfirm() {
+
+}
+
 type BracketExpression struct {
 	Value                *Expression
 	LeftParentheseToken  *lexer.Token
@@ -143,5 +166,5 @@ func (i Identifier) Kind() int {
 }
 
 func (i Identifier) ExpressionConfirm() {
-	
+
 }
