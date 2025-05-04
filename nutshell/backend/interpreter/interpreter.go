@@ -12,9 +12,18 @@ func Evaluate(heap *objects.Heap, scope *objects.Scope, ast_node *parser.Stateme
 	case parser.BlockStmt:
 		var node parser.Block = (*ast_node).(parser.Block)
 		rt = EvaluateBlock(heap, scope, &node)
+	case parser.VariableDeclarationStmt:
+		var node parser.VariableDeclaration = (*ast_node).(parser.VariableDeclaration)
+		rt = EvaluateVariableDeclaration(heap, scope, &node)
 	case parser.BracketExpr:
 		var node parser.BracketExpression = (*ast_node).(parser.BracketExpression)
 		rt = EvaluateBracketExpression(heap, scope, &node)
+	case parser.AssignmentExpr:
+		var node parser.AssignmentExpression = (*ast_node).(parser.AssignmentExpression)
+		rt = EvaluateAssignmentExpression(heap, scope, &node)
+	case parser.IdentifierExpr:
+		var node parser.Identifier = (*ast_node).(parser.Identifier)
+		rt = EvaluateIdentifier(heap, scope, &node)
 	case parser.IntExpr:
 		var node parser.Int = (*ast_node).(parser.Int)
 		rt = EvaluateInt(heap, scope, &node)
