@@ -1,6 +1,9 @@
 package parser
 
-import "nutshell/runtime"
+import (
+	"nutshell/frontend/lexer"
+	"nutshell/runtime"
+)
 
 type Block struct {
 	Body []*Statement
@@ -35,4 +38,23 @@ func InitBlock() *Block {
 	}
 
 	return &returned
+}
+
+type VariableDeclaration struct {
+	LetToken *lexer.Token
+	VariableName string
+	Value *Expression
+	IsConstant bool
+}
+
+func (v VariableDeclaration) StartPosition() *runtime.Position {
+	return v.LetToken.StartPosition
+}
+
+func (v VariableDeclaration) EndPosition() *runtime.Position {
+	return (*v.Value).EndPosition()
+}
+
+func (v VariableDeclaration) Kind() int {
+	return VariableDeclarationStmt
 }
