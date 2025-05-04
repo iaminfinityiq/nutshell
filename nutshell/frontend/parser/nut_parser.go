@@ -93,6 +93,19 @@ func (n *NutParser) parse_statement() runtime.RuntimeResult[*Statement] {
 			Result: rt.Result,
 			Error:  nil,
 		}
+	case lexer.Const:
+		var rt runtime.RuntimeResult[*Statement] = n.parse_const_variable_declarartion()
+		if rt.Error != nil {
+			return runtime.RuntimeResult[*Statement]{
+				Result: nil,
+				Error:  rt.Error,
+			}
+		}
+
+		returned = runtime.RuntimeResult[*Statement]{
+			Result: rt.Result,
+			Error:  nil,
+		}
 	default:
 		var rt runtime.RuntimeResult[*Expression] = n.parse_expression()
 		if rt.Error != nil {
@@ -147,6 +160,51 @@ func (n *NutParser) parse_let_variable_declaration() runtime.RuntimeResult[*Stat
 		LetToken:     let_token,
 		VariableName: variable_name,
 		Value:        value,
+		IsConstant:   false,
+	}).(Statement)
+
+	return runtime.RuntimeResult[*Statement]{
+		Result: &variable_declaration_statement,
+		Error:  nil,
+	}
+}
+
+func (n *NutParser) parse_const_variable_declarartion() runtime.RuntimeResult[*Statement] {
+	var const_token *lexer.Token = n.CurrentToken
+	n.advance()
+	var rt runtime.RuntimeResult[*lexer.Token] = n.expect(lexer.Identifier)
+	if rt.Error != nil {
+		return runtime.RuntimeResult[*Statement]{
+			Result: nil,
+			Error:  rt.Error,
+		}
+	}
+
+	var variable_name string = rt.Result.Value
+	n.advance()
+	rt = n.expect(lexer.Equals)
+	if rt.Error != nil {
+		return runtime.RuntimeResult[*Statement]{
+			Result: nil,
+			Error:  rt.Error,
+		}
+	}
+
+	n.advance()
+	var rt2 runtime.RuntimeResult[*Expression] = n.parse_expression()
+	if rt2.Error != nil {
+		return runtime.RuntimeResult[*Statement]{
+			Result: nil,
+			Error:  rt.Error,
+		}
+	}
+
+	var value *Expression = rt2.Result
+	var variable_declaration_statement Statement = interface{}(VariableDeclaration{
+		LetToken:     const_token,
+		VariableName: variable_name,
+		Value:        value,
+		IsConstant:   true,
 	}).(Statement)
 
 	return runtime.RuntimeResult[*Statement]{
@@ -156,7 +214,7 @@ func (n *NutParser) parse_let_variable_declaration() runtime.RuntimeResult[*Stat
 }
 
 func (n *NutParser) parse_expression() runtime.RuntimeResult[*Expression] {
-	var rt runtime.RuntimeResult[*Expression] = n.parse_additive_expression()
+	var rt runtime.RuntimeResult[*Expression] = n.parse_assignment_expression()
 	if rt.Error != nil {
 		return runtime.RuntimeResult[*Expression]{
 			Result: nil,
@@ -166,6 +224,46 @@ func (n *NutParser) parse_expression() runtime.RuntimeResult[*Expression] {
 
 	return runtime.RuntimeResult[*Expression]{
 		Result: rt.Result,
+		Error:  nil,
+	}
+}
+
+func (n *NutParser) parse_assignment_expression() runtime.RuntimeResult[*Expression] {
+	var rt runtime.RuntimeResult[*Expression] = n.parse_additive_expression()
+	if rt.Error != nil {
+		return runtime.RuntimeResult[*Expression]{
+			Result: nil,
+			Error:  rt.Error,
+		}
+	}
+
+	if n.get_current_token_type() != lexer.Equals {
+		return runtime.RuntimeResult[*Expression]{
+			Result: rt.Result,
+			Error:  nil,
+		}
+	}
+
+	n.advance()
+	var left *Expression = rt.Result
+
+	rt = n.parse_additive_expression()
+	if rt.Error != nil {
+		return runtime.RuntimeResult[*Expression]{
+			Result: nil,
+			Error:  rt.Error,
+		}
+	}
+
+	var assignment_expression Expression = interface{}(AssignmentExpression{
+		Callee:        left,
+		Value:         rt.Result,
+		PositionStart: (*left).StartPosition(),
+		PositionEnd:   (*rt.Result).EndPosition(),
+	}).(Expression)
+
+	return runtime.RuntimeResult[*Expression]{
+		Result: &assignment_expression,
 		Error:  nil,
 	}
 }
