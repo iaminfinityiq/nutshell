@@ -7,12 +7,13 @@ import (
 
 type ArgumentTuple struct {
 	PositionStart *runtime.Position
-	PositionEnd *runtime.Position
-	Argument *Object
+	PositionEnd   *runtime.Position
+	Argument      *Object
 }
 
 type Object struct {
 	DataType   string
+	Bases      map[string]bool
 	Value      any
 	Properties *Scope
 	Heap       *Heap
@@ -20,12 +21,20 @@ type Object struct {
 	Flag       bool
 }
 
+func (o *Object) MatchesDataType(data_type string) bool {
+	if o.DataType == data_type {
+		return true
+	}
+
+	return o.Bases[data_type]
+}
+
 func (o *Object) Assign(attribute_name string, value *Object) {
 	o.Properties.Assign(attribute_name, value)
 }
 
 func (o *Object) Access(attribute_name string) (*Object, bool) {
-	a, b := o.Properties.Access(attribute_name)
+	a, b := o.Properties.ObjectAccess(attribute_name)
 	return a, b
 }
 
