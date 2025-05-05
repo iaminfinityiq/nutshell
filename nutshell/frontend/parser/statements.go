@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"nutshell/frontend/lexer"
 	"nutshell/runtime"
 )
 
@@ -41,14 +40,15 @@ func InitBlock() *Block {
 }
 
 type VariableDeclaration struct {
-	LetToken *lexer.Token
-	VariableName string
-	Value *Expression
-	IsConstant bool
+	PositionStart *runtime.Position
+	VariableName  string
+	DataType      *Expression
+	Value         *Expression
+	IsConstant    bool
 }
 
 func (v VariableDeclaration) StartPosition() *runtime.Position {
-	return v.LetToken.StartPosition
+	return v.PositionStart
 }
 
 func (v VariableDeclaration) EndPosition() *runtime.Position {
