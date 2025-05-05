@@ -11,9 +11,10 @@ import (
 )
 
 func main() {
-	var file_extension string = "nutsh"
+	var file_extension string = "nut"
 	var test string = `
-1/3
+double a = 1
+a = 1.5
 `
 
 	var l *lexer.Lexer = lexer.InitLexer("nutshell", file_extension, test)
@@ -51,7 +52,15 @@ func main() {
 		Heap:        heap,
 		Scope:       make(map[string]int),
 		ConstantMap: make(map[string]bool),
+		DataTypeMap: make(map[string]string),
 	}
+
+	scope.Declare("type", objects.MakeType(heap, scope, []string{"type"}), true)
+	scope.Declare("any", objects.MakeType(heap, scope, []string{"any"}), true)
+	scope.Declare("builtin_function", objects.MakeType(heap, scope, []string{"builtin_function"}), true)
+	scope.Declare("int", objects.MakeType(heap, scope, []string{"int"}), true)
+	scope.Declare("double", objects.MakeType(heap, scope, []string{"double"}), true)
+	scope.Declare("string", objects.MakeType(heap, scope, []string{"string"}), true)
 
 	var rt3 runtime.RuntimeResult[*objects.Object] = interpreter.EvaluateBlock(heap, scope, rt2.Result)
 	if rt3.Error != nil {
