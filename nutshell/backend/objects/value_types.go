@@ -9,19 +9,27 @@ import (
 func MakeBuiltInFunction(heap *Heap, scope *Scope, name string, value func(*runtime.Position, *runtime.Position, *[]*ArgumentTuple) runtime.RuntimeResult[*Object]) *Object {
 	var returned *Object = &Object{
 		DataType: "builtin_function",
+		Bases:    make(map[string]bool),
 		Value:    value,
 		Properties: &Scope{
 			Parent:      scope,
 			Heap:        heap,
 			Scope:       make(map[string]int),
 			ConstantMap: make(map[string]bool),
+			DataTypeMap: make(map[string]string),
 		},
 		Heap: heap,
 		Flag: true,
 	}
 
+	returned.Bases["any"] = true
+
 	var heap_index int = heap.Add(returned)
 	returned.HeapIndex = heap_index
+
+	returned.Properties.ConstantMap["name"] = true
+	returned.Properties.ConstantMap["call"] = true
+	returned.Properties.ConstantMap["repr"] = true
 
 	returned.Assign("name", MakeString(heap, scope, name))
 
@@ -31,19 +39,46 @@ func MakeBuiltInFunction(heap *Heap, scope *Scope, name string, value func(*runt
 	return returned
 }
 
-func MakeString(heap *Heap, scope *Scope, value string) *Object {
+func MakeType(heap *Heap, scope *Scope, value []string) *Object {
 	var returned *Object = &Object{
-		DataType: "string",
+		DataType: "type",
+		Bases:    make(map[string]bool),
 		Value:    value,
 		Properties: &Scope{
 			Parent:      scope,
 			Heap:        heap,
 			Scope:       make(map[string]int),
 			ConstantMap: make(map[string]bool),
+			DataTypeMap: make(map[string]string),
+		},
+	}
+	var heap_index int = heap.Add(returned)
+	returned.HeapIndex = heap_index
+
+	returned.Assign("repr", MakeString(heap, scope, fmt.Sprintf("<type %s>", value[0])))
+
+	return returned
+}
+
+func MakeString(heap *Heap, scope *Scope, value string) *Object {
+	var returned *Object = &Object{
+		DataType: "string",
+		Bases:    make(map[string]bool),
+		Value:    value,
+		Properties: &Scope{
+			Parent:      scope,
+			Heap:        heap,
+			Scope:       make(map[string]int),
+			ConstantMap: make(map[string]bool),
+			DataTypeMap: make(map[string]string),
 		},
 		Heap: heap,
 		Flag: true,
 	}
+
+	returned.Bases["any"] = true
+
+	returned.Properties.ConstantMap["repr"] = true
 
 	var heap_index int = heap.Add(returned)
 	returned.HeapIndex = heap_index
@@ -56,19 +91,30 @@ func MakeString(heap *Heap, scope *Scope, value string) *Object {
 func MakeInt(heap *Heap, scope *Scope, value int64) *Object {
 	var returned *Object = &Object{
 		DataType: "int",
+		Bases:    make(map[string]bool),
 		Value:    value,
 		Properties: &Scope{
 			Parent:      scope,
 			Heap:        heap,
 			Scope:       make(map[string]int),
 			ConstantMap: make(map[string]bool),
+			DataTypeMap: make(map[string]string),
 		},
 		Heap: heap,
 		Flag: true,
 	}
 
+	returned.Bases["any"] = true
+
 	var heap_index int = heap.Add(returned)
 	returned.HeapIndex = heap_index
+
+	returned.Properties.ConstantMap["add"] = true
+	returned.Properties.ConstantMap["subtract"] = true
+	returned.Properties.ConstantMap["multiply"] = true
+	returned.Properties.ConstantMap["divide"] = true
+	returned.Properties.ConstantMap["modulo"] = true
+	returned.Properties.ConstantMap["repr"] = true
 
 	returned.Assign("add", MakeBuiltInFunction(heap, scope, "add", func(position_start *runtime.Position, position_end *runtime.Position, arguments *[]*ArgumentTuple) runtime.RuntimeResult[*Object] {
 		if len(*arguments) != 2 {
@@ -279,19 +325,30 @@ func MakeInt(heap *Heap, scope *Scope, value int64) *Object {
 func MakeDouble(heap *Heap, scope *Scope, value float64) *Object {
 	var returned *Object = &Object{
 		DataType: "double",
+		Bases:    make(map[string]bool),
 		Value:    value,
 		Properties: &Scope{
 			Parent:      scope,
 			Heap:        heap,
 			Scope:       make(map[string]int),
 			ConstantMap: make(map[string]bool),
+			DataTypeMap: make(map[string]string),
 		},
 		Heap: heap,
 		Flag: true,
 	}
 
+	returned.Bases["any"] = true
+
 	var heap_index int = heap.Add(returned)
 	returned.HeapIndex = heap_index
+
+	returned.Properties.ConstantMap["add"] = true
+	returned.Properties.ConstantMap["subtract"] = true
+	returned.Properties.ConstantMap["multiply"] = true
+	returned.Properties.ConstantMap["divide"] = true
+	returned.Properties.ConstantMap["modulo"] = true
+	returned.Properties.ConstantMap["repr"] = true
 
 	returned.Assign("add", MakeBuiltInFunction(heap, scope, "add", func(position_start *runtime.Position, position_end *runtime.Position, arguments *[]*ArgumentTuple) runtime.RuntimeResult[*Object] {
 		if len(*arguments) != 2 {
