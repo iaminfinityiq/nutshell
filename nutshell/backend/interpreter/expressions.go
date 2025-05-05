@@ -44,6 +44,17 @@ func EvaluateAssignmentExpression(heap *objects.Heap, scope *objects.Scope, ast_
 			}
 		}
 
+		data_type, ok := scope.DataTypeMap[left_node.VariableName]
+		if ok {
+			if !rt.Result.MatchesDataType(data_type) {
+				var err runtime.Error = runtime.TypeError(right_node.StartPosition(), right_node.EndPosition(), fmt.Sprintf("Expected the type of the value to be a %s, not %s", data_type, rt.Result.DataType))
+				return runtime.RuntimeResult[*objects.Object]{
+					Result: nil,
+					Error:  &err,
+				}
+			}
+		}
+
 		scope.Assign(left_node.VariableName, rt.Result)
 		return runtime.RuntimeResult[*objects.Object]{
 			Result: rt.Result,
