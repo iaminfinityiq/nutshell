@@ -115,10 +115,25 @@ func (n *NutParser) parse_statement() runtime.RuntimeResult[*Statement] {
 			}
 		}
 
-		var statement Statement = (*rt.Result).(Statement)
-		returned = runtime.RuntimeResult[*Statement]{
-			Result: &statement,
-			Error:  nil,
+		if n.get_current_token_type() == lexer.Identifier {
+			var rt2 runtime.RuntimeResult[*Statement] = n.parse_typed_variable_declaration(rt.Result, false)
+			if rt2.Error != nil {
+				return runtime.RuntimeResult[*Statement]{
+					Result: nil,
+					Error:  rt2.Error,
+				}
+			}
+
+			returned = runtime.RuntimeResult[*Statement]{
+				Result: rt2.Result,
+				Error:  nil,
+			}
+		} else {
+			var statement Statement = (*rt.Result).(Statement)
+			returned = runtime.RuntimeResult[*Statement]{
+				Result: &statement,
+				Error:  nil,
+			}
 		}
 	}
 
@@ -156,11 +171,22 @@ func (n *NutParser) parse_let_variable_declaration() runtime.RuntimeResult[*Stat
 	}
 
 	var value *Expression = rt2.Result
+	var any_identifier Expression = interface{}(Identifier{
+		VariableName: "any",
+		IdentifierToken: &lexer.Token{
+			TokenType:     lexer.Identifier,
+			Value:         "any",
+			StartPosition: let_token.StartPosition,
+			EndPosition:   let_token.StartPosition,
+		},
+	}).(Expression)
+
 	var variable_declaration_statement Statement = interface{}(VariableDeclaration{
-		LetToken:     let_token,
-		VariableName: variable_name,
-		Value:        value,
-		IsConstant:   false,
+		PositionStart: let_token.StartPosition,
+		VariableName:  variable_name,
+		DataType:      &any_identifier,
+		Value:         value,
+		IsConstant:    false,
 	}).(Statement)
 
 	return runtime.RuntimeResult[*Statement]{
@@ -200,11 +226,57 @@ func (n *NutParser) parse_const_variable_declarartion() runtime.RuntimeResult[*S
 	}
 
 	var value *Expression = rt2.Result
+	var any_identifier Expression = interface{}(Identifier{
+		VariableName: "any",
+		IdentifierToken: &lexer.Token{
+			TokenType:     lexer.Identifier,
+			Value:         "any",
+			StartPosition: const_token.StartPosition,
+			EndPosition:   const_token.StartPosition,
+		},
+	}).(Expression)
+
 	var variable_declaration_statement Statement = interface{}(VariableDeclaration{
-		LetToken:     const_token,
-		VariableName: variable_name,
-		Value:        value,
-		IsConstant:   true,
+		PositionStart: const_token.StartPosition,
+		VariableName:  variable_name,
+		DataType:      &any_identifier,
+		Value:         value,
+		IsConstant:    true,
+	}).(Statement)
+
+	return runtime.RuntimeResult[*Statement]{
+		Result: &variable_declaration_statement,
+		Error:  nil,
+	}
+}
+
+func (n *NutParser) parse_typed_variable_declaration(data_type *Expression, is_constant bool) runtime.RuntimeResult[*Statement] {
+	var variable_name string = n.get_current_token_value()
+	n.advance()
+
+	var rt runtime.RuntimeResult[*lexer.Token] = n.expect(lexer.Equals)
+	if rt.Error != nil {
+		return runtime.RuntimeResult[*Statement]{
+			Result: nil,
+			Error:  rt.Error,
+		}
+	}
+
+	n.advance()
+	var rt2 runtime.RuntimeResult[*Expression] = n.parse_expression()
+	if rt2.Error != nil {
+		return runtime.RuntimeResult[*Statement]{
+			Result: nil,
+			Error:  rt.Error,
+		}
+	}
+
+	var variable_declaration_statement Statement = interface{}(VariableDeclaration{
+		PositionStart: (*data_type).StartPosition(),
+		VariableName:  variable_name,
+		DataType:      data_type,
+		Value:         rt2.Result,
+		IsConstant:    is_constant,
 	}).(Statement)
 
 	return runtime.RuntimeResult[*Statement]{
@@ -247,7 +319,7 @@ func (n *NutParser) parse_assignment_expression() runtime.RuntimeResult[*Express
 	n.advance()
 	var left *Expression = rt.Result
 
-	rt = n.parse_additive_expression()
+	rt = n.parse_expression()
 	if rt.Error != nil {
 		return runtime.RuntimeResult[*Expression]{
 			Result: nil,
