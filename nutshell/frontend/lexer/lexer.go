@@ -40,6 +40,9 @@ func (l *Lexer) Tokenize() runtime.RuntimeResult[*[]*Token] {
 	var tokens []*Token = []*Token{}
 
 	var keywords map[string]int = make(map[string]int)
+	keywords["let"] = Let
+	keywords["var"] = Var
+	keywords["const"] = Const
 
 	for l.CurrentChar != nil {
 		switch *l.CurrentChar {
@@ -88,8 +91,88 @@ func (l *Lexer) Tokenize() runtime.RuntimeResult[*[]*Token] {
 			var position_end runtime.Position = position_start.Copy()
 			position_end.Advance(nil)
 			tokens = append(tokens, CreateToken(&position_start, &position_end, RightParenthese, ")"))
+		case '=':
+			var position_start runtime.Position = l.Position.Copy()
+			var position_end runtime.Position = position_start.Copy()
+			position_end.Advance(nil)
+			tokens = append(tokens, CreateToken(&position_start, &position_end, Equals, "="))
+		case ',':
+			var position_start runtime.Position = l.Position.Copy()
+			var position_end runtime.Position = position_start.Copy()
+			position_end.Advance(nil)
+			tokens = append(tokens, CreateToken(&position_start, &position_end, Comma, ","))
 		default:
 			if is_whitespace(*l.CurrentChar) {
+				l.Advance()
+				continue
+			}
+
+			if *l.CurrentChar == '"' {
+				var position_start runtime.Position = l.Position.Copy()
+				l.Advance()
+				var value string = "\""
+
+				for l.CurrentChar != nil && *l.CurrentChar != '"' {
+					value += string(*l.CurrentChar)
+					l.Advance()
+
+					if l.CurrentChar != nil {
+						if *l.CurrentChar == '\\' {
+							value += string(*l.CurrentChar)
+							l.Advance()
+						}
+					}
+				}
+
+				if l.CurrentChar == nil {
+					var position_end runtime.Position = position_start.Copy()
+					position_end.Advance(nil)
+
+					var err runtime.Error = runtime.SyntaxError(&position_start, &position_end, "Expected '\"' to be closed, got EOF")
+					return runtime.RuntimeResult[*[]*Token]{
+						Result: nil,
+						Error:  &err,
+					}
+				}
+
+				var position_end = l.Position.Copy()
+				tokens = append(tokens, CreateToken(&position_start, &position_end, String, fmt.Sprintf("\"%s\"", value)))
+
+				l.Advance()
+				continue
+			}
+
+			if *l.CurrentChar == '\'' {
+				var position_start runtime.Position = l.Position.Copy()
+				l.Advance()
+				var value string = "'"
+
+				for l.CurrentChar != nil && *l.CurrentChar != '\'' {
+					value += string(*l.CurrentChar)
+					l.Advance()
+
+					if l.CurrentChar != nil {
+						if *l.CurrentChar == '\\' {
+							value += string(*l.CurrentChar)
+							l.Advance()
+						}
+					}
+				}
+
+				if l.CurrentChar == nil {
+					var position_end runtime.Position = position_start.Copy()
+					position_end.Advance(nil)
+
+					var err runtime.Error = runtime.SyntaxError(&position_start, &position_end, "Expected ''' to be closed, got EOF")
+					return runtime.RuntimeResult[*[]*Token]{
+						Result: nil,
+						Error:  &err,
+					}
+				}
+
+				var position_end = l.Position.Copy()
+				tokens = append(tokens, CreateToken(&position_start, &position_end, String, fmt.Sprintf("'%s''", value)))
+
 				l.Advance()
 				continue
 			}

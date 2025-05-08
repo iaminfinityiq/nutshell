@@ -100,6 +100,31 @@ func (u UnaryExpression) ExpressionConfirm() {
 
 }
 
+type CallExpression struct {
+	Callee               *Expression
+	Arguments            []*Expression
+	LeftParentheseToken  *lexer.Token
+	RightParentheseToken *lexer.Token
+}
+
+func (c CallExpression) StartPosition() *runtime.Position {
+	var returned runtime.Position = (*c.Callee).StartPosition().Copy()
+	return &returned
+}
+
+func (c CallExpression) EndPosition() *runtime.Position {
+	var returned runtime.Position = c.RightParentheseToken.EndPosition.Copy()
+	return &returned
+}
+
+func (c CallExpression) Kind() int {
+	return CallExpr
+}
+
+func (c CallExpression) ExpressionConfirm() {
+
+}
+
 type Int struct {
 	Value    int64
 	IntToken *lexer.Token
@@ -143,6 +168,29 @@ func (d Double) Kind() int {
 }
 
 func (d Double) ExpressionConfirm() {
+
+}
+
+type String struct {
+	Value       string
+	StringToken *lexer.Token
+}
+
+func (s String) StartPosition() *runtime.Position {
+	var returned runtime.Position = s.StringToken.StartPosition.Copy()
+	return &returned
+}
+
+func (s String) EndPosition() *runtime.Position {
+	var returned runtime.Position = s.StringToken.EndPosition.Copy()
+	return &returned
+}
+
+func (s String) Kind() int {
+	return StringExpr
+}
+
+func (s String) ExpressionConfirm() {
 
 }
 

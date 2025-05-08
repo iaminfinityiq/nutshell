@@ -4,11 +4,16 @@ import "nutshell/runtime"
 
 const (
 	BlockStmt = iota
+	VariableDeclarationStmt
+	AssignmentExpr
 	BracketExpr
 	BinaryExpr
 	UnaryExpr
+	CallExpr
 	IntExpr
 	DoubleExpr
+	StringExpr
+	IdentifierExpr
 )
 
 type Statement interface {

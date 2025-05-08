@@ -22,7 +22,17 @@ const (
 	// Value types
 	Int
 	Double
+	String
 	Identifier
+
+	// Keywords
+	Let
+	Var
+	Const
+
+	// Other symbols
+	Equals
+	Comma
 )
 
 type Token struct {

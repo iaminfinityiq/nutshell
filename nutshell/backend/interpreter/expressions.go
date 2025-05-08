@@ -101,6 +101,14 @@ func EvaluateDouble(heap *objects.Heap, scope *objects.Scope, ast_node *parser.D
 	}
 }
 
+func EvaluateString(heap *objects.Heap, scope *objects.Scope, ast_node *parser.String) runtime.RuntimeResult[*objects.Object] {
+	var returned *objects.Object = objects.MakeString(heap, scope, ast_node.Value)
+	return runtime.RuntimeResult[*objects.Object]{
+		Result: returned,
+		Error:  nil,
+	}
+}
+
 func EvaluateBinaryExpression(heap *objects.Heap, scope *objects.Scope, ast_node *parser.BinaryExpression) runtime.RuntimeResult[*objects.Object] {
 	var node parser.Statement = (*ast_node.Left).(parser.Statement)
 	var rt runtime.RuntimeResult[*objects.Object] = Evaluate(heap, scope, &node)
@@ -319,6 +327,71 @@ func EvaluateBinaryExpression(heap *objects.Heap, scope *objects.Scope, ast_node
 				Result: rt.Result,
 				Error:  nil,
 			}
+		}
+	}
+
+	return runtime.RuntimeResult[*objects.Object]{
+		Result: nil,
+		Error:  nil,
+	}
+}
+
+func EvaluateCallExpression(heap *objects.Heap, scope *objects.Scope, ast_node *parser.CallExpression) runtime.RuntimeResult[*objects.Object] {
+	var node parser.Statement = (*ast_node.Callee).(parser.Statement)
+	var rt runtime.RuntimeResult[*objects.Object] = Evaluate(heap, scope, &node)
+	if rt.Error != nil {
+		return runtime.RuntimeResult[*objects.Object]{
+			Result: nil,
+			Error:  rt.Error,
+		}
+	}
+
+	var callee *objects.Object = rt.Result
+
+	call_attribute, ok := callee.Access("call")
+	if !ok {
+		var err runtime.Error = runtime.TypeError((*ast_node.Callee).StartPosition(), (*ast_node.Callee).EndPosition(), fmt.Sprintf("Object with type %s is not callable", callee.DataType))
+		return runtime.RuntimeResult[*objects.Object]{
+			Result: nil,
+			Error:  &err,
+		}
+	}
+
+	if call_attribute.DataType == "builtin_function" {
+		var call_function func(*runtime.Position, *runtime.Position, *[]*objects.ArgumentTuple) runtime.RuntimeResult[*objects.Object] = call_attribute.Value.(func(*runtime.Position, *runtime.Position, *[]*objects.ArgumentTuple) runtime.RuntimeResult[*objects.Object])
+
+		var arguments []*objects.ArgumentTuple = []*objects.ArgumentTuple{}
+		for _, argument := range ast_node.Arguments {
+			node = (*argument).(parser.Statement)
+			rt = Evaluate(heap, scope, &node)
+			if rt.Error != nil {
+				return runtime.RuntimeResult[*objects.Object]{
+					Result: nil,
+					Error:  rt.Error,
+				}
+			}
+
+			var argument_tuple objects.ArgumentTuple = objects.ArgumentTuple{
+				PositionStart: (*argument).StartPosition(),
+				PositionEnd:   (*argument).EndPosition(),
+				Argument:      rt.Result,
+			}
+
+			arguments = append(arguments, &argument_tuple)
+		}
+
+		var position_start runtime.Position = ast_node.LeftParentheseToken.StartPosition.Copy()
+		rt = call_function(&position_start, ast_node.EndPosition(), &arguments)
+		if rt.Error != nil {
+			return runtime.RuntimeResult[*objects.Object]{
+				Result: nil,
+				Error:  rt.Error,
+			}
+		}
+
+		return runtime.RuntimeResult[*objects.Object]{
+			Result: rt.Result,
+			Error:  nil,
 		}
 	}
 

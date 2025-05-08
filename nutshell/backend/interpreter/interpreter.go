@@ -30,9 +30,15 @@ func Evaluate(heap *objects.Heap, scope *objects.Scope, ast_node *parser.Stateme
 	case parser.DoubleExpr:
 		var node parser.Double = (*ast_node).(parser.Double)
 		rt = EvaluateDouble(heap, scope, &node)
+	case parser.StringExpr:
+		var node parser.String = (*ast_node).(parser.String)
+		rt = EvaluateString(heap, scope, &node)
 	case parser.BinaryExpr:
 		var node parser.BinaryExpression = (*ast_node).(parser.BinaryExpression)
 		rt = EvaluateBinaryExpression(heap, scope, &node)
+	case parser.CallExpr:
+		var node parser.CallExpression = (*ast_node).(parser.CallExpression)
+		rt = EvaluateCallExpression(heap, scope, &node)
 	}
 
 	if rt.Error != nil {

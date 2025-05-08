@@ -60,6 +60,35 @@ func MakeType(heap *Heap, scope *Scope, value []string) *Object {
 	return returned
 }
 
+func MakeNull(heap *Heap, scope *Scope) *Object {
+	var returned *Object = &Object{
+		DataType: "nulltype",
+		Bases:    make(map[string]bool),
+		Value:    nil,
+		Properties: &Scope{
+			Parent:      scope,
+			Heap:        heap,
+			Scope:       make(map[string]int),
+			ConstantMap: make(map[string]bool),
+			DataTypeMap: make(map[string]string),
+		},
+
+		Heap: heap,
+		Flag: true,
+	}
+
+	returned.Bases["any"] = true
+
+	returned.Properties.ConstantMap["repr"] = true
+
+	var heap_index int = heap.Add(returned)
+	returned.HeapIndex = heap_index
+
+	returned.Assign("repr", MakeString(heap, scope, "null"))
+
+	return returned
+}
+
 func MakeString(heap *Heap, scope *Scope, value string) *Object {
 	var returned *Object = &Object{
 		DataType: "string",
