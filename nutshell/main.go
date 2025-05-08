@@ -14,7 +14,7 @@ import (
 
 func main() {
 	file, err := os.Open("examples/hello_world.nut")
-	var file_extension string = "nutsh"
+	var file_extension string = "nut"
 	if err != nil {
 		fmt.Println(err)
 		return
