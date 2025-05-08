@@ -561,8 +561,7 @@ func (n *NutshParser) parse_primary_expression() runtime.RuntimeResult[*Expressi
 		}
 	case lexer.String:
 		//var quote rune = rune(n.get_current_token_value()[0])
-		value, _ := strconv.Unquote(n.get_current_token_value()[1 : len(n.get_current_token_value())-1])
-
+		value, _ := strconv.Unquote(fmt.Sprintf("\"%s\"", n.get_current_token_value()[1:]))
 		var string_expression Expression = interface{}(String{
 			Value:       value,
 			StringToken: n.CurrentToken,
