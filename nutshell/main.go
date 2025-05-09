@@ -13,8 +13,8 @@ import (
 )
 
 func main() {
-	file, err := os.Open("examples/hello_world.nut")
-	var file_extension string = "nut"
+	file, err := os.Open("examples/variables_examples.nutsh")
+	var file_extension string = "nutsh"
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -73,7 +73,7 @@ func main() {
 	scope.Declare("int", objects.MakeType(heap, scope, []string{"int"}), true)
 	scope.Declare("double", objects.MakeType(heap, scope, []string{"double"}), true)
 	scope.Declare("string", objects.MakeType(heap, scope, []string{"string"}), true)
-	scope.Declare("null_type", objects.MakeType(heap, scope, []string{"null"}), true)
+	scope.Declare("void", objects.MakeType(heap, scope, []string{"void"}), true)
 
 	// constant values
 	scope.Declare("null", objects.MakeNull(heap, scope), true)
