@@ -62,7 +62,7 @@ func MakeType(heap *Heap, scope *Scope, value []string) *Object {
 
 func MakeNull(heap *Heap, scope *Scope) *Object {
 	var returned *Object = &Object{
-		DataType: "nulltype",
+		DataType: "void",
 		Bases:    make(map[string]bool),
 		Value:    nil,
 		Properties: &Scope{
