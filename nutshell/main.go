@@ -13,7 +13,7 @@ import (
 )
 
 func main() {
-	file, err := os.Open("examples/variables_examples.nutsh")
+	file, err := os.Open("code_syntaxes/hello_world.nut")
 	var file_extension string = "nutsh"
 	if err != nil {
 		fmt.Println(err)
@@ -28,7 +28,9 @@ func main() {
 		data += "\n"
 	}
 
-	var l *lexer.Lexer = lexer.InitLexer("main", file_extension, data)
+	data = data[0:len(data)-1]
+
+	var l *lexer.Lexer = lexer.InitLexer("hello_world", file_extension, data)
 	var rt runtime.RuntimeResult[*[]*lexer.Token] = l.Tokenize()
 	if rt.Error != nil {
 		rt.Error.DisplayError()
@@ -55,7 +57,7 @@ func main() {
 
 	var heap *objects.Heap = &objects.Heap{
 		Heap: make(map[int]*objects.Object),
-		Last: 0,
+		Last: 1,
 	}
 
 	var scope *objects.Scope = &objects.Scope{
@@ -79,7 +81,7 @@ func main() {
 	scope.Declare("null", objects.MakeNull(heap, scope), true)
 
 	// built-in functions
-	scope.Declare("print", objects.MakeBuiltInFunction(heap, scope, "print", func(position_start *runtime.Position, position_end *runtime.Position, arguments *[]*objects.ArgumentTuple) runtime.RuntimeResult[*objects.Object] {
+	scope.Declare("print", objects.MakeBuiltInFunction(heap, scope, func(position_start *runtime.Position, position_end *runtime.Position, arguments *[]*objects.ArgumentTuple) runtime.RuntimeResult[*objects.Object] {
 		var argument_length int = len(*arguments)
 		for i, argument := range *arguments {
 			repr, _ := argument.Argument.Access("repr")
@@ -97,7 +99,7 @@ func main() {
 		}
 	}), true)
 
-	scope.Declare("println", objects.MakeBuiltInFunction(heap, scope, "print", func(position_start *runtime.Position, position_end *runtime.Position, arguments *[]*objects.ArgumentTuple) runtime.RuntimeResult[*objects.Object] {
+	scope.Declare("println", objects.MakeBuiltInFunction(heap, scope, func(position_start *runtime.Position, position_end *runtime.Position, arguments *[]*objects.ArgumentTuple) runtime.RuntimeResult[*objects.Object] {
 		var argument_length int = len(*arguments)
 		for i, argument := range *arguments {
 			repr, _ := argument.Argument.Access("repr")
@@ -113,6 +115,26 @@ func main() {
 		fmt.Print("\n")
 		return runtime.RuntimeResult[*objects.Object]{
 			Result: null,
+			Error:  nil,
+		}
+	}), true)
+
+	scope.Declare("input", objects.MakeBuiltInFunction(heap, scope, func(position_start *runtime.Position, position_end *runtime.Position, arguments *[]*objects.ArgumentTuple) runtime.RuntimeResult[*objects.Object] {
+		var argument_length int = len(*arguments)
+		for i, argument := range *arguments {
+			repr, _ := argument.Argument.Access("repr")
+			fmt.Print(repr.Value)
+
+			if i < argument_length-1 {
+				fmt.Print(" ")
+			}
+		}
+
+		var input string
+		fmt.Scanln(&input)
+
+		return runtime.RuntimeResult[*objects.Object]{
+			Result: objects.MakeString(heap, scope, input),
 			Error:  nil,
 		}
 	}), true)
