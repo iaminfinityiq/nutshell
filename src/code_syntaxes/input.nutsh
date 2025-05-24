@@ -1,4 +1,0 @@
-print("What's your name: ")
-auto name = input()
-
-println("Your name is", name)
