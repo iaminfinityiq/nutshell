@@ -1,0 +1,17 @@
+int i
+double d
+string s
+void v
+
+type t
+any a
+builtin_function b
+
+println("These are all of the zero values for each data type we have")
+println("int:", i)
+println("double:", d)
+println("string:", s)
+println("void:", v)
+println("type:", t)
+println("any:", a)
+println("builtin_function:", b)
